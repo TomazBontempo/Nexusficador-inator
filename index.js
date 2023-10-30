@@ -23,7 +23,7 @@ function processData() {
       const processedData = processDataFiles(data1, data2);
 
       // Download the processed data as a text file
-      downloadFile(processedData, "Nexus Script.txt", "text/plain");
+      downloadFile(processedData, "Nexus Script.nex", "text/plain");
     };
 
     reader2.readAsText(file2);
