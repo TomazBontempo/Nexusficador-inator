@@ -244,8 +244,7 @@ function processDataFiles(data1, data2) {
     console.log("Final output:");
     console.log(outputText2);
 
-    return `
-#NEXUS
+    return `#NEXUS
 
 BEGIN TAXA;
 DIMENSIONS NTAX=${numGroups};
@@ -273,7 +272,7 @@ BEGIN TRAITS;
 
 Dimensions NTRAITS=${numberCount};
 Format labels=yes missing=? separator=Comma;
-TraitLabels Arg ${headersText2}
+TraitLabels ${headersText2};
 Matrix
 
 ${outputText2}
