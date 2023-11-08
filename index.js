@@ -175,14 +175,18 @@ function processDataFiles(data1, data2) {
         let location2 = nameLocation2[1];
 
         // Add the location to the set of locations
-        locationsSet2.add(location2);
+        if (location2 !== undefined) {
+          locationsSet2.add(location2);
+        }
 
         // Add the data to the table
-        tableData2.push({
-          name: name2,
-          location: location2,
-          group: group2,
-        });
+        if (location2 !== undefined) {
+          tableData2.push({
+            name: name2,
+            location: location2,
+            group: group2,
+          });
+        }
       }
     }
 
@@ -206,13 +210,16 @@ function processDataFiles(data1, data2) {
       }
 
       for (let location of locationsArray2) {
-        newTableData2[row.group][location] = tableData2.filter(
-          (r) => r.group === row.group && r.location === location
-        ).length;
+        if (row.location !== undefined) {
+          newTableData2[row.group][location] = tableData2.filter(
+            (r) => r.group === row.group && r.location === location
+          ).length;
+        }
       }
     }
 
     console.log("New table data prepared");
+    console.log(newTableData2);
 
     // Store headers in a variable
     let headersText2 = locationsArray2.join(" ");
@@ -227,7 +234,11 @@ function processDataFiles(data1, data2) {
       outputText2 += group + " ";
 
       for (let i = 0; i < locationsArray2.length; i++) {
-        outputText2 += newTableData2[group][locationsArray2[i]];
+        if (newTableData2[group][locationsArray2[i]] !== undefined) {
+          outputText2 += newTableData2[group][locationsArray2[i]];
+        } else {
+          outputText2 += "0"; // Use 0 for undefined locations
+        }
 
         if (i < locationsArray2.length - 1) {
           outputText2 += ",";
