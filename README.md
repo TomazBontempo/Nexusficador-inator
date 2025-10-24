@@ -1,443 +1,141 @@
-# NEXUS Generator Pro
+# Nexusficadorinator-inator™️
 
-## 🚀 Nova Versão Melhorada
-
-Esta é a versão aprimorada do nexusAutoScript que processa **arquivos FASTA diretamente** e gera arquivos NEXUS com análise automática de haplótipos e distribuição geográfica.
+> _"Ah, Perry o Ornitorrinco! Vejo que você quer converter arquivos FASTA em NEXUS... MAS AGORA VOCÊ CAIU NA ARMADILHA DO MEU NEXUSFICADORINATOR-INATOR!"_
 
 ---
 
-## ✨ Novidades
+## 👨‍🔬 Introdução Maligna
 
-### 1. **Processamento Direto de FASTA**
+Olá, cientistas malucos e agentes secretos disfarçados de mamíferos sem bico! Eu, Dr. Heinz Doofenshmirtz, apresento a você o **Nexusficadorinator-inator™️**: a solução definitiva para transformar seus arquivos FASTA em NEXUS, com direito a análise de haplótipos, distribuição geográfica e, claro, um toque de genialidade do mal!
 
-- ✅ Não precisa mais usar DnaSP para gerar arquivos .hap e .out
-- ✅ Arraste o arquivo FASTA e tudo é processado automaticamente
-- ✅ Identificação automática de haplótipos únicos
-
-### 2. **Dois Modos de Saída**
-
-#### **Modo Completo**
-
-- Sequências completas (todos os nucleotídeos)
-- Ideal para análises filogenéticas robustas
-- Software compatível: PAUP, MrBayes, MEGA, RAxML
-
-#### **Modo PopArt** ⭐ NOVO!
-
-- Apenas sites variáveis (SNPs)
-- Formato compacto com matchchar (`.`)
-- Reduz drasticamente o tamanho do arquivo
-- Ideal para redes de haplótipos no PopArt
-
-### 3. **Bloco TRAITS Automático**
-
-- Extrai informação geográfica dos nomes das sequências
-- Conta automaticamente amostras por bioma
-- Biomas configuráveis via interface
-- Formato pronto para PopArt
-
-### 4. **Interface Moderna**
-
-- Design responsivo e intuitivo
-- Drag-and-drop para upload
-- Preview dos dados antes de gerar
-- Estatísticas em tempo real
-- Feedback visual completo
+Chega de perder tempo com scripts confusos ou softwares que só um gênio do mal entenderia. Aqui, tudo acontece direto do navegador, sem instalar nada.
 
 ---
 
-## 📋 Como Usar
+## 🕹️ Como Usar (Plano Infalível)
 
-### Passo 1: Preparar o Arquivo FASTA
+1. **Prepare seu arquivo FASTA**
 
-Seu arquivo deve estar **alinhado** (todas as sequências com o mesmo comprimento):
+   - Nomeie suas sequências em um dos formatos abaixo:
+     - `Nome-Localidade1`
+     - `Nome-Localidade1-Localidade2`
+   - Exemplo:
+     ```
+     >Perry-AreaDos3Estados
+     ATCGATCGATCG...
+     >Perry-AreaDos3Estados-Danville
+     ATCGATCGATCG...
+     ```
 
-```fasta
->Aurora-SaoPaulo-MataAtlantica
-GGCCTATTCTTAGCCATACACTATACATCAGATACAACCACTGCCTTCTCATCCGTAGCC...
+2. **Envie o arquivo**
 
->RK01-MatoGrossoDoSul-Cerrado
-GGCCTATTCTTAGCCATACACTATACATCAGATACAACCACTGCCTTCTCATCCGTAGCC...
+   - Clique na área "Arraste seu arquivo FASTA aqui" ou no botão "Selecionar arquivo", ou arraste seu arquivo para a caixa de upload.
+   - Aceita `.fas`, `.fasta`, `.fa` ou `.txt` (máx. 50MB).
 
->Benjamin-MatoGrossoDoSul-Pantanal
-GGCCTATTCTTAGCCATACACTATACATCAGATACAACCACTGCCTTCTCATCCGTAGCC...
-```
+3. **Confira o Resumo**
 
-**Formato dos nomes (para detecção automática de biomas):**
+   - Veja quantas sequências, haplótipos e localidades foram detectados.
+   - Se o nome não seguir o padrão, o Nexusficadorinator-inator não vai funcionar direito (e eu vou ficar frustrado).
 
-- `Nome-Localidade-Bioma`
-- O sistema extrai automaticamente a **última parte** após o último hífen (-)
-- Exemplo 1: `Aurora-SaoPaulo-MataAtlantica` → Bioma: **MataAtlantica**
-- Exemplo 2: `RK11-MatoGrossoDoSul-Cerrado` → Bioma: **Cerrado**
-- Exemplo 3: `GQ259914.1-Bolivia(Hte2)-4` → Bioma: **4**
+4. **Escolha as Opções de Dominação**
 
-### Passo 2: Carregar o Arquivo
+   - **Modo Completo:** exporta todas as posições das sequências (para análises filogenéticas).
+   - **Modo PopArt:** exporta só as posições variáveis (para redes de haplótipos).
+   - **Distribuição geográfica:** adiciona o bloco TRAITS com as localidades.
 
-1. Abra `index.html` no navegador
-2. Arraste o arquivo FASTA para a área de upload
-3. Aguarde o processamento automático
+5. **Ambiguidade de Nucleotídeos?**
 
-### Passo 3: Configurar Opções
+   - Se aparecerem N ou -, escolha se contam como diferença ou se devem ser substituídos pelo nucleotídeo mais frequente.
+   - Em caso de empate, você decide (como um verdadeiro vilão).
 
-**Escolha o modo de saída:**
+6. **Gere o Arquivo NEXUS**
 
-- ☑️ **Modo Completo**: Para análises filogenéticas
-- ☑️ **Modo PopArt**: Para redes de haplótipos
+   - Clique em "Gerar arquivo NEXUS" e... BAM! O download começa.
 
-**Verifique os biomas detectados:**
-
-- Os biomas são extraídos automaticamente da última parte dos nomes (após último hífen)
-- Aparecem na seção "Biomas/Localidades Detectadas"
-- Se nenhum bioma for detectado, verifique o formato dos nomes das suas sequências
-
-### Passo 4: Gerar NEXUS
-
-1. Revise o preview dos dados
-2. Clique em **"Gerar arquivo NEXUS"**
-3. O arquivo será baixado automaticamente
+7. **Novo Plano?**
+   - Clique em "Novo arquivo" para recomeçar sua dominação científica.
 
 ---
 
-## 🎯 Formatos de Entrada
+## 🧪 Análise Técnica do Inator
 
-### Extensões Aceitas
+### Tecnologias do Mal Utilizadas
 
-- `.fas`
-- `.fasta`
-- `.fa`
-- `.txt` (desde que seja FASTA válido)
+- **HTML5 & CSS3**: Estrutura e visual moderno, responsivo e escuro (porque todo laboratório do mal é escuro).
+- **JavaScript (Vanilla)**: Toda a lógica de conversão, análise e interação sem depender de frameworks (afinal, eu sou o framework!).
+- **Ionicons**: Ícones modernos e leves para interface e botões.
+- **Google Fonts (Inter)**: Tipografia elegante, porque até um vilão precisa de estilo.
 
-### Requisitos
+### Como Funciona (Plano Maligno em Detalhes)
 
-- ✅ Sequências alinhadas (mesmo comprimento)
-- ✅ Apenas caracteres válidos: `ATCGN-`
-- ✅ Formato FASTA padrão (`>Nome` seguido de sequência)
-- ✅ Tamanho máximo: 50MB
+1. **Leitura do FASTA**
 
----
+   - O usuário envia o arquivo.
+   - O script lê e valida se todas as sequências têm o mesmo tamanho (alinhamento obrigatório!).
 
-## 📊 Saídas Geradas
+2. **Identificação de Haplótipos**
 
-### Modo Completo
+   - Agrupa sequências idênticas em haplótipos únicos (H1, H2, H3...)
+   - Conta quantas amostras existem de cada haplótipo.
 
-```nexus
-#NEXUS
+3. **Extração de Localidades**
 
-BEGIN TAXA;
-DIMENSIONS NTAX=39;
-TAXLABELS
-H1 H2 H3 ... H39
-;
-END;
+   - Analisa o nome das sequências para extrair localidades (última ou penúltima parte do nome, conforme o padrão).
+   - Gera matriz de distribuição para o bloco TRAITS.
 
-BEGIN CHARACTERS;
-DIMENSIONS NCHAR=931;
-FORMAT DATATYPE=DNA  MISSING=? GAP=-;
-MATRIX
-H1  GGCCTATTCTTAGCCATACACTATACATCA...
-H2  GGCCTATTCTTAGCCATACACTATACATCA...
-;
-END;
+4. **Detecção de Ambiguidade**
 
-BEGIN TRAITS;
-Dimensions NTRAITS=5;
-TraitLabels MataAtlantica Cerrado Pantanal Amazonia Chaco
-Matrix
-H1  4,16,12,0,1
-H2  1,0,0,0,0
-;
-END;
-```
+   - Se encontrar N ou -, pergunta ao usuário como lidar (diferença ou substituição).
+   - Em caso de empate, exibe um popup para decisão manual.
 
-### Modo PopArt
+5. **Geração do NEXUS**
 
-```nexus
-BEGIN CHARACTERS;
-DIMENSIONS NCHAR=61;  ← Apenas sites variáveis!
-FORMAT DATATYPE=DNA MISSING=? GAP=- MATCHCHAR=.;
-MATRIX
-H1  TGTTCCGTGGTGGTTACAAGCTTCCTGCCCTTCTTCACTCTGACGTAAACTAGCAGCTTTT
-H2  ......................................C......................
-H3  C............................................................
-;
-END;
-```
+   - Monta o arquivo NEXUS com blocos TAXA, CHARACTERS e, se escolhido, TRAITS.
+   - No modo PopArt, só sites variáveis são exportados, usando `.` para matches.
+   - O arquivo é baixado automaticamente com nome inteligente.
 
-**Vantagens do modo PopArt:**
+6. **Interface do Mal**
+   - Drag-and-drop, feedback visual, pré-visualização de dados, tudo para facilitar a vida do cientista (ou do agente secreto).
 
-- Arquivo 90% menor
-- Processamento mais rápido no software
-- Mesma informação filogenética
+### Fluxo Resumido
 
----
-
-## 🔍 Funcionalidades Avançadas
-
-### Detecção Automática de Haplótipos
-
-O sistema:
-
-1. Lê todas as sequências do FASTA
-2. Compara sequências para identificar duplicatas
-3. Agrupa sequências idênticas em haplótipos
-4. Numera automaticamente (H1, H2, H3...)
-5. Mantém registro de quais amostras pertencem a cada haplótipo
-
-### Extração Geográfica
-
-Para cada sequência:
-
-1. Analisa o nome buscando padrões de bioma
-2. Conta quantas amostras por bioma em cada haplótipo
-3. Gera o bloco TRAITS formatado
-4. Permite configuração personalizada de biomas
-
-### Identificação de Sites Variáveis
-
-No modo PopArt:
-
-1. Compara todas as posições entre haplótipos
-2. Identifica apenas posições polimórficas (SNPs)
-3. Usa sequência H1 como referência
-4. Codifica identidade com `.` (matchchar)
-
----
-
-## 📖 Exemplos de Uso
-
-### Exemplo 1: Estudo Filogeográfico
-
-```
-Input: original.fas (93 sequências, 931 bp)
-↓
-Output (Modo PopArt):
-- 39 haplótipos identificados
-- 61 sites variáveis (6.5% do total)
-- Distribuição por 5 biomas
-- Arquivo: original_PopArt.nex (8 KB vs 120 KB completo)
-```
-
-### Exemplo 2: Análise Filogenética
-
-```
-Input: dataset.fasta (150 sequências, 1500 bp)
-↓
-Output (Modo Completo):
-- 85 haplótipos únicos
-- Sequências completas (1500 bp)
-- Pronto para MrBayes/PAUP
-- Arquivo: dataset_Complete.nex
+```mermaid
+flowchart TD
+    A[Upload do FASTA] --> B[Validação e Parsing]
+    B --> C[Identificação de Haplótipos]
+    C --> D[Extração de Localidades]
+    D --> E[Opções do Usuário]
+    E --> F[Geração do NEXUS]
+    F --> G[Download Automático]
 ```
 
 ---
 
-## ⚠️ Troubleshooting
+## 🛠️ Tecnologias e Funcionalidades
 
-### Erro: "Sequências devem ter o mesmo comprimento"
-
-**Solução:** Alinhe suas sequências antes usando:
-
-- MUSCLE
-- MAFFT
-- ClustalW
-- MEGA (Alignment Explorer)
-
-### Erro: "Caracteres inválidos"
-
-**Solução:** Verifique se há:
-
-- Espaços nas sequências
-- Caracteres especiais
-- Bases ambíguas (use N para desconhecidas)
-
-### Erro: "Nenhum bioma detectado"
-
-**Solução:**
-
-- O sistema extrai o bioma da **última parte** do nome após o último hífen (-)
-- Verifique se seus nomes seguem o padrão: `Nome-Localidade-Bioma`
-- Exemplos corretos:
-  - `Amostra01-SaoPaulo-MataAtlantica` ✅
-  - `RK11-Brasil-Cerrado` ✅
-  - `GQ123-Peru-1` ✅
-- Se os nomes não seguem esse padrão, renomeie as sequências no arquivo FASTA
-
-### Nenhum haplótipo detectado
-
-**Solução:**
-
-- Todas as sequências são únicas (não há duplicatas)
-- Isso é normal em alguns datasets
-- Cada sequência = 1 haplótipo
+| Tecnologia     | Função Principal                                |
+| -------------- | ----------------------------------------------- |
+| HTML5/CSS3     | Estrutura, responsividade, dark mode            |
+| JavaScript     | Lógica de parsing, análise, geração de arquivos |
+| Ionicons       | Ícones modernos e leves                         |
+| Google Fonts   | Tipografia elegante                             |
+| FileReader API | Leitura de arquivos no navegador                |
+| Blob API       | Geração e download de arquivos                  |
+| Flexbox/Grid   | Layout moderno                                  |
+| Promises/Async | Interação fluida e sem travamentos              |
 
 ---
 
-## 🔧 Detalhes Técnicos
+## 🤖 Considerações Finais do Dr. Doofenshmirtz
 
-### Algoritmo de Haplótipos
-
-```javascript
-1. Ler FASTA e extrair sequências
-2. Criar Map<sequência, haplótipo_id>
-3. Para cada sequência:
-   - Se sequência já existe no Map: adicionar à lista do haplótipo
-   - Se nova: criar novo haplótipo (H_next)
-4. Retornar lista de haplótipos com índices e contagens
-```
-
-### Identificação de SNPs
-
-```javascript
-1. Para cada posição (0 até comprimento):
-   - Coletar base de todos os haplótipos
-   - Se Set(bases).size > 1: posição é variável
-2. Extrair apenas posições variáveis
-3. Gerar matriz compacta
-```
-
-### Extração Geográfica
-
-```javascript
-1. Para cada sequência, extrair última parte do nome (após último hífen)
-   - "Aurora-SaoPaulo-MataAtlantica" → "MataAtlantica"
-   - "GQ259914.1-Bolivia(Hte2)-4" → "4"
-2. Criar lista de biomas únicos detectados (ordenada alfabeticamente)
-3. Para cada haplótipo:
-   - Contar quantas sequências pertencem a cada bioma
-4. Gerar bloco TRAITS com contagens
-```
+- O Nexusficadorinator-inator™️ foi projetado para ser à prova de agentes secretos e cientistas distraídos.
+- Se algo der errado, a culpa é do Perry o Ornitorrinco (ou do alinhamento das suas sequências).
+- Use, abuse e conquiste o mundo científico!
 
 ---
 
-## 🆚 Comparação com Versão Anterior
-
-| Recurso                  | Versão Antiga        | Versão Nova     |
-| ------------------------ | -------------------- | --------------- |
-| **Input**                | .hap + .out (manual) | .fasta (direto) |
-| **Haplótipos**           | Manual (DnaSP)       | Automático      |
-| **Sites variáveis**      | ❌ Não               | ✅ Sim (PopArt) |
-| **Bloco TRAITS**         | ❌ Não               | ✅ Sim          |
-| **Biomas configuráveis** | ❌ Não               | ✅ Sim          |
-| **Preview**              | ❌ Não               | ✅ Sim          |
-| **Validação**            | Básica               | Completa        |
-| **Interface**            | Simples              | Moderna         |
+> _"Se ao menos eu tivesse tido isso na faculdade, talvez tivesse dominado o mundo... ou pelo menos passado em Genética Molecular!"_
 
 ---
 
-## 🎓 Workflow Científico
-
-### Antes (manual):
-
-```
-Sequências brutas
-    ↓ (alinhamento manual)
-Sequências alinhadas (.fas)
-    ↓ (DnaSP)
-.hap + .out
-    ↓ (nexusAutoScript antigo)
-NEXUS básico
-    ↓ (edição manual)
-NEXUS com TRAITS
-    ↓ (PopArt)
-Rede de haplótipos
-```
-
-### Agora (automático):
-
-```
-Sequências alinhadas (.fas)
-    ↓ (NEXUS Generator Pro)
-NEXUS com TRAITS (modo PopArt ou Completo)
-    ↓ (PopArt / MrBayes / PAUP)
-Análise final
-```
-
-**Redução:** 5 etapas → 2 etapas ⚡
-
----
-
-## 📚 Referências
-
-### Software Compatível
-
-**Para Redes de Haplótipos:**
-
-- PopArt: http://popart.otago.ac.nz
-- TCS: http://darwin.uvigo.es/software/tcs.html
-- Network: https://www.fluxus-engineering.com
-
-**Para Análises Filogenéticas:**
-
-- MrBayes: http://nbisweden.github.io/MrBayes/
-- PAUP\*: http://phylosolutions.com/paup-test/
-- MEGA: https://www.megasoftware.net
-- RAxML: https://cme.h-its.org/exelixis/software.html
-
----
-
-## 💡 Dicas
-
-### Para Melhor Performance:
-
-1. **Use arquivos alinhados**: Economiza tempo de validação
-2. **Nomeie sequências corretamente**: Facilita extração de biomas
-3. **Modo PopArt para datasets grandes**: Reduz tamanho drasticamente
-4. **Configure biomas antes**: Evita reprocessamento
-
-### Para Melhor Qualidade:
-
-1. **Valide alinhamento**: Use ferramentas especializadas
-2. **Remova gaps excessivos**: Melhora análise
-3. **Use códigos padronizados**: Para localidades e biomas
-4. **Documente metadados**: Mantenha informações claras
-
----
-
-## 🐛 Report de Bugs
-
-Encontrou um problema? Abra uma issue com:
-
-- Descrição do erro
-- Arquivo de exemplo (se possível)
-- Navegador e versão
-- Mensagem de erro (se houver)
-
----
-
-## 📜 Licença
-
-Este software é desenvolvido para fins acadêmicos e científicos.
-
----
-
-## 👨‍💻 Desenvolvimento
-
-**Tecnologias:**
-
-- HTML5 + CSS3 (design moderno)
-- JavaScript Vanilla (sem dependências)
-- Ionicons (ícones)
-- Google Fonts (Inter)
-
-**Compatibilidade:**
-
-- Chrome 90+
-- Firefox 88+
-- Edge 90+
-- Safari 14+
-
----
-
-## 🔮 Próximas Funcionalidades
-
-- [ ] Exportação para outros formatos (Phylip, Arlequin)
-- [ ] Visualização gráfica de haplótipos
-- [ ] Estatísticas de diversidade (Hd, π)
-- [ ] Suporte para dados proteicos
-- [ ] Modo batch (múltiplos arquivos)
-
----
-
-**Versão:** 2.0  
-**Data:** Outubro 2025  
-**Status:** ✅ Produção
+Feito por BontempoWeb, com consultoria do Dr. Doofenshmirtz 😈

@@ -152,7 +152,7 @@ section h3 ion-icon {
   border: 1px solid var(--primary-color);
   border-radius: var(--radius-sm);
   padding: 12px;
-  margin: 15px 0;
+  margin-top: 25px;
   text-align: center;
   font-size: 0.9rem;
 }
@@ -419,8 +419,8 @@ section h3 ion-icon {
 
 /* ===== Preview Section ===== */
 .preview-content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 20px;
 }
 
@@ -448,13 +448,13 @@ section h3 ion-icon {
   font-size: 0.85rem;
   color: var(--text-secondary);
   line-height: 1.6;
-  max-height: 300px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
 /* ===== Buttons ===== */
 .btn {
-  padding: 14px 28px;
+  padding: 14px 14px;
   border: none;
   border-radius: var(--radius-sm);
   font-size: 1rem;
@@ -465,6 +465,8 @@ section h3 ion-icon {
   align-items: center;
   gap: 10px;
   font-family: inherit;
+  text-align: center;
+  justify-content: center;
 }
 
 .btn ion-icon {
@@ -774,4 +776,61 @@ section h3 ion-icon {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary-color);
+}
+
+/* ===== Modals ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: none;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 30px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+  animation: slideIn 0.3s ease;
+}
+
+.modal-content h3 {
+  color: var(--primary-color);
+  margin-bottom: 15px;
+  font-size: 1.4rem;
+}
+
+.modal-content p {
+  color: var(--text-primary);
+  margin-bottom: 25px;
+  line-height: 1.6;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.modal-buttons .btn {
+  min-width: 180px;
+}
+
+.nucleotide-btn {
+  min-width: 60px !important;
+  padding: 12px 20px !important;
+  font-size: 1.2rem !important;
+  font-weight: bold !important;
 }

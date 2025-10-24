@@ -3,13 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nexusficadorinator - FASTA to NEXUS</title>
+    <title>Nexusficador-inator</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🤖</text></svg>"
     />
     <script
       type="module"
@@ -24,8 +32,11 @@
     <div class="container">
       <header class="header">
         <h1>
-          <ion-icon name="git-network-outline"></ion-icon>
-          Nexusficadorinator
+          <i
+            class="fa-solid fa-robot"
+            style="font-size: 2.5rem; vertical-align: middle"
+          ></i>
+          Nexusficadorinator<sup>™</sup>
         </h1>
         <p class="subtitle">
           FASTA entra, NEXUS sai. Porque nenhum cientista maluco deveria perder
@@ -92,7 +103,7 @@
               </div>
               <div class="stat-item">
                 <ion-icon name="resize-outline"></ion-icon>
-                <span><strong id="seqLength">0</strong> bp</span>
+                <span><strong id="seqLength">0</strong>pb</span>
               </div>
               <div class="stat-item">
                 <ion-icon name="git-branch-outline"></ion-icon>
@@ -130,8 +141,8 @@
               <div class="radio-content">
                 <strong>Modo PopArt</strong>
                 <small
-                  >Mantém apenas as posições que variam entre sequências (ideal
-                  para redes de haplótipos no PopArt)</small
+                  >Mantém apenas as posições que variam entre sequências
+                  (PopArt)</small
                 >
               </div>
             </label>
@@ -221,6 +232,56 @@
         <div id="successToast" class="toast" style="display: none">
           <ion-icon name="checkmark-circle-outline"></ion-icon>
           <span id="toastMessage">Arquivo gerado com sucesso!</span>
+        </div>
+
+        <!-- Ambiguity Modal -->
+        <div id="ambiguityModal" class="modal-overlay" style="display: none">
+          <div class="modal-content">
+            <h3>Caracteres Ambíguos Detectados</h3>
+            <p id="ambiguityMessage"></p>
+            <div class="modal-buttons">
+              <button id="countAsDifferencesBtn" class="btn btn-primary">
+                Sim
+              </button>
+              <button id="replaceWithMostFrequentBtn" class="btn btn-secondary">
+                Não
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tie Resolution Modal -->
+        <div id="tieModal" class="modal-overlay" style="display: none">
+          <div class="modal-content">
+            <h3>Empate na Frequência</h3>
+            <p id="tieMessage"></p>
+            <div class="modal-buttons">
+              <button
+                class="btn btn-primary nucleotide-btn"
+                data-nucleotide="A"
+              >
+                A
+              </button>
+              <button
+                class="btn btn-primary nucleotide-btn"
+                data-nucleotide="T"
+              >
+                T
+              </button>
+              <button
+                class="btn btn-primary nucleotide-btn"
+                data-nucleotide="C"
+              >
+                C
+              </button>
+              <button
+                class="btn btn-primary nucleotide-btn"
+                data-nucleotide="G"
+              >
+                G
+              </button>
+            </div>
+          </div>
         </div>
       </main>
 
