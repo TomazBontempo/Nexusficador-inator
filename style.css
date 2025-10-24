@@ -147,6 +147,32 @@ section h3 ion-icon {
   font-size: 0.85rem;
 }
 
+.format-instructions {
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid var(--primary-color);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin: 15px 0;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.format-instructions code {
+  background: var(--bg-dark);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: "Courier New", monospace;
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.format-instructions small {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  display: block;
+  margin-top: 5px;
+}
+
 /* ===== File Card ===== */
 .file-card {
   background: var(--bg-input);

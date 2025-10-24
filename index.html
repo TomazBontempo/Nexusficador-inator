@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NEXUS Generator Pro - FASTA to NEXUS</title>
+    <title>Nexusficadorinator - FASTA to NEXUS</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -25,11 +25,11 @@
       <header class="header">
         <h1>
           <ion-icon name="git-network-outline"></ion-icon>
-          NEXUS Generator Pro
+          Nexusficadorinator
         </h1>
         <p class="subtitle">
-          Conversor FASTA para NEXUS com análise de haplótipos e distribuição
-          geográfica
+          FASTA entra, NEXUS sai. Porque nenhum cientista maluco deveria perder
+          tempo com formatação manual!
         </p>
       </header>
 
@@ -40,6 +40,7 @@
             <ion-icon name="cloud-upload-outline" class="drop-icon"></ion-icon>
             <h3>Arraste seu arquivo FASTA aqui</h3>
             <p>ou clique para selecionar</p>
+
             <input
               type="file"
               id="fastaInput"
@@ -52,6 +53,15 @@
             </button>
             <small class="file-info"
               >Formatos aceitos: .fas, .fasta, .fa (máx. 50MB)</small
+            >
+          </div>
+          <div class="format-instructions">
+            <strong>Formato dos nomes das sequências no FASTA:</strong><br />
+            <code>Nome-Localidade1</code> ou
+            <code>Nome-Localidade1-Localidade2</code> <br />
+            <small
+              >Exemplo: Perry-AreaDos3Estados ou
+              Perry-AreaDos3Estados-Danville</small
             >
           </div>
 
