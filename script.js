@@ -4,8 +4,6 @@ let parsedData = null;
 let currentBiomes = [];
 let selectedLocation = null; // 'location01' or 'location02'
 let hasDualLocations = false;
-let hasAmbiguousChars = false;
-let ambiguousChars = { N: false, gap: false };
 
 // ===== DOM Elements =====
 const elements = {
@@ -36,17 +34,6 @@ const elements = {
   loadingSpinner: document.getElementById("loadingSpinner"),
   successToast: document.getElementById("successToast"),
   toastMessage: document.getElementById("toastMessage"),
-  // Ambiguity modal elements
-  ambiguityModal: document.getElementById("ambiguityModal"),
-  ambiguityMessage: document.getElementById("ambiguityMessage"),
-  countAsDifferencesBtn: document.getElementById("countAsDifferencesBtn"),
-  replaceWithMostFrequentBtn: document.getElementById(
-    "replaceWithMostFrequentBtn"
-  ),
-  // Tie resolution modal
-  tieModal: document.getElementById("tieModal"),
-  tieMessage: document.getElementById("tieMessage"),
-  nucleotideButtons: document.querySelectorAll(".nucleotide-btn"),
 };
 
 // ===== Initialize =====
@@ -85,21 +72,6 @@ function setupEventListeners() {
   // Action buttons
   elements.generateBtn.addEventListener("click", generateNexus);
   elements.resetBtn.addEventListener("click", resetAll);
-
-  // Ambiguity modal buttons
-  elements.countAsDifferencesBtn.addEventListener("click", () =>
-    handleAmbiguityChoice(true)
-  );
-  elements.replaceWithMostFrequentBtn.addEventListener("click", () =>
-    handleAmbiguityChoice(false)
-  );
-
-  // Tie resolution buttons
-  elements.nucleotideButtons.forEach((btn) => {
-    btn.addEventListener("click", (e) =>
-      handleNucleotideChoice(e.target.dataset.nucleotide)
-    );
-  });
 }
 
 // ===== Drag and Drop Handlers =====
@@ -160,17 +132,8 @@ async function processFile(file) {
       throw new Error("Nenhuma sequência válida encontrada no arquivo FASTA");
     }
 
-    // Handle ambiguous characters if present
-    if (parsed.hasAmbiguousChars) {
-      const shouldCountAsDifferences = await showAmbiguityModal();
-
-      if (!shouldCountAsDifferences) {
-        // Replace ambiguous characters with most frequent nucleotides
-        await replaceAmbiguousChars(parsed.sequences);
-      }
-    }
-
-    // Now proceed with haplotype identification and geographic data extraction
+    // Identify haplotypes excluding positions with N or -
+    // Positions with N or - are excluded from comparison but kept in original sequences
     const haplotypes = identifyHaplotypes(parsed.sequences);
     const geoData = extractGeographicData(parsed.sequences, haplotypes);
 
@@ -245,9 +208,8 @@ function parseFasta(text) {
     );
   }
 
-  // Validate DNA characters and detect ambiguities
+  // Validate DNA characters
   const validChars = /^[ATCGN-]+$/;
-  ambiguousChars = { N: false, gap: false };
 
   for (const seq of sequences) {
     if (!validChars.test(seq.sequence)) {
@@ -255,45 +217,68 @@ function parseFasta(text) {
         `Sequência "${seq.name}" contém caracteres inválidos. Use apenas ATCGN-`
       );
     }
-
-    // Check for ambiguous characters
-    if (seq.sequence.includes("N")) ambiguousChars.N = true;
-    if (seq.sequence.includes("-")) ambiguousChars.gap = true;
   }
-
-  hasAmbiguousChars = ambiguousChars.N || ambiguousChars.gap;
 
   return {
     sequences,
     sequenceLength: firstLength,
-    hasAmbiguousChars,
-    ambiguousChars,
   };
 }
 
 // ===== Haplotype Identification =====
 function identifyHaplotypes(sequences) {
+  if (sequences.length === 0) return [];
+
+  // Step 1: Identify valid positions (no N or - in ANY sequence)
+  const seqLength = sequences[0].sequence.length;
+  const validPositions = [];
+
+  for (let pos = 0; pos < seqLength; pos++) {
+    let isValid = true;
+    for (const seq of sequences) {
+      const char = seq.sequence[pos];
+      if (char === "N" || char === "-") {
+        isValid = false;
+        break;
+      }
+    }
+    if (isValid) {
+      validPositions.push(pos);
+    }
+  }
+
+  // Step 2: Extract valid sequence portions for comparison
+  const getValidSequence = (sequence) => {
+    return validPositions.map((pos) => sequence[pos]).join("");
+  };
+
+  // Step 3: Identify haplotypes based on valid positions only
   const haplotypeMap = new Map();
   const haplotypes = [];
   let hapIndex = 1;
 
   for (let i = 0; i < sequences.length; i++) {
     const seq = sequences[i];
-    const seqString = seq.sequence;
+    const validSeq = getValidSequence(seq.sequence);
 
-    if (haplotypeMap.has(seqString)) {
-      // Sequence already seen
-      const hapId = haplotypeMap.get(seqString);
-      haplotypes.find((h) => h.id === hapId).indices.push(i + 1);
-      haplotypes.find((h) => h.id === hapId).samples.push(seq.name);
+    if (haplotypeMap.has(validSeq)) {
+      // Sequence already seen (based on valid positions)
+      const hapId = haplotypeMap.get(validSeq);
+      const hap = haplotypes.find((h) => h.id === hapId);
+      hap.indices.push(i + 1);
+      hap.samples.push(seq.name);
     } else {
       // New haplotype
       const hapId = `H${hapIndex}`;
-      haplotypeMap.set(seqString, hapId);
+      haplotypeMap.set(validSeq, hapId);
+      // Store ORIGINAL sequence (with N and -), not filtered version
       haplotypes.push({
         id: hapId,
         number: hapIndex,
-        sequence: seqString,
+        sequence: seq.sequence, // Original complete sequence
+        validSequence: validSeq, // Filtered sequence for reference
+        validPositions: validPositions.length, // Info for user
+        totalPositions: seqLength,
         indices: [i + 1],
         samples: [seq.name],
         count: 1,
@@ -802,127 +787,6 @@ function resetAll() {
   elements.actionSection.style.display = "none";
 
   hideError();
-}
-
-// ===== Ambiguity Handling =====
-function showAmbiguityModal() {
-  return new Promise((resolve) => {
-    // Set message based on what was found
-    let message = "";
-    if (ambiguousChars.N && ambiguousChars.gap) {
-      message = "Nucleotídeos N e - encontrados";
-    } else if (ambiguousChars.N) {
-      message = "Nucleotídeo N encontrado";
-    } else if (ambiguousChars.gap) {
-      message = "Nucleotídeo - encontrado";
-    }
-
-    message += ". Essas posições contam como diferenças válidas?";
-
-    elements.ambiguityMessage.textContent = message;
-    elements.ambiguityModal.style.display = "flex";
-
-    // Store resolve function to call later
-    window.ambiguityResolve = resolve;
-  });
-}
-
-function handleAmbiguityChoice(countAsDifferences) {
-  elements.ambiguityModal.style.display = "none";
-  window.ambiguityResolve(countAsDifferences);
-}
-
-// ===== Ambiguous Character Replacement =====
-async function replaceAmbiguousChars(sequences) {
-  if (sequences.length === 0) return;
-
-  const seqLength = sequences[0].sequence.length;
-  const replacementMap = {};
-
-  // For each position, calculate most frequent nucleotide
-  for (let pos = 0; pos < seqLength; pos++) {
-    const counts = { A: 0, T: 0, C: 0, G: 0 };
-    const affectedSequences = [];
-    let hasAmbiguous = false;
-
-    // Count valid nucleotides at this position and track affected sequences
-    sequences.forEach((seq) => {
-      const char = seq.sequence[pos];
-      if (char === "N" || char === "-") {
-        hasAmbiguous = true;
-        affectedSequences.push(seq.name);
-      } else if (counts.hasOwnProperty(char)) {
-        counts[char]++;
-      }
-    });
-
-    // Only replace if there are ambiguous characters at this position
-    if (hasAmbiguous) {
-      const maxCount = Math.max(...Object.values(counts));
-      const candidates = Object.keys(counts).filter(
-        (nuc) => counts[nuc] === maxCount
-      );
-
-      let replacement;
-      if (candidates.length === 1) {
-        // No tie
-        replacement = candidates[0];
-      } else {
-        // Tie - ask user with more detailed information
-        replacement = await showTieModal(
-          pos + 1,
-          candidates,
-          affectedSequences
-        );
-      }
-
-      replacementMap[pos] = replacement;
-    }
-  }
-
-  // Apply replacements
-  sequences.forEach((seq) => {
-    let newSeq = "";
-    for (let pos = 0; pos < seqLength; pos++) {
-      const char = seq.sequence[pos];
-      if ((char === "N" || char === "-") && replacementMap[pos]) {
-        newSeq += replacementMap[pos];
-      } else {
-        newSeq += char;
-      }
-    }
-    seq.sequence = newSeq;
-  });
-}
-
-function showTieModal(position, candidates, affectedSequences) {
-  return new Promise((resolve) => {
-    const sequenceList = affectedSequences.slice(0, 3).join(", ");
-    const moreCount =
-      affectedSequences.length > 3
-        ? ` (+${affectedSequences.length - 3} outras)`
-        : "";
-
-    elements.tieMessage.textContent = `Empate na posição ${position} (sequência: ${sequenceList}${moreCount}). Qual nucleotídeo usar para substituir N/-?`;
-
-    // Show only candidate buttons
-    elements.nucleotideButtons.forEach((btn) => {
-      const nucleotide = btn.dataset.nucleotide;
-      btn.style.display = candidates.includes(nucleotide)
-        ? "inline-block"
-        : "none";
-    });
-
-    elements.tieModal.style.display = "flex";
-
-    // Store resolve function
-    window.tieResolve = resolve;
-  });
-}
-
-function handleNucleotideChoice(nucleotide) {
-  elements.tieModal.style.display = "none";
-  window.tieResolve(nucleotide);
 }
 
 // ===== Initialize on load =====

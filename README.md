@@ -43,10 +43,11 @@ Chega de perder tempo com scripts confusos ou softwares que só um gênio do mal
    - **Modo PopArt:** exporta só as posições variáveis (para redes de haplótipos).
    - **Distribuição geográfica:** adiciona o bloco TRAITS com as localidades.
 
-5. **Ambiguidade de Nucleotídeos?**
+5. **Tratamento de Posições Ambíguas**
 
-   - Se aparecerem N ou -, escolha se contam como diferença ou se devem ser substituídos pelo nucleotídeo mais frequente.
-   - Em caso de empate, você decide (como um verdadeiro vilão).
+   - Posições com N ou - são **automaticamente excluídas** da comparação de haplótipos.
+   - As sequências originais (com N e -) são preservadas no arquivo NEXUS final.
+   - Abordagem conservadora e cientificamente rigorosa!
 
 6. **Gere o Arquivo NEXUS**
 
@@ -75,18 +76,22 @@ Chega de perder tempo com scripts confusos ou softwares que só um gênio do mal
 
 2. **Identificação de Haplótipos**
 
-   - Agrupa sequências idênticas em haplótipos únicos (H1, H2, H3...)
+   - Identifica posições válidas: exclui automaticamente posições com N ou - em qualquer sequência.
+   - Compara sequências apenas nas posições válidas.
+   - Agrupa sequências idênticas em haplótipos únicos (H1, H2, H3...).
    - Conta quantas amostras existem de cada haplótipo.
+   - **Importante:** As sequências originais (com N e -) são preservadas no arquivo NEXUS.
 
 3. **Extração de Localidades**
 
    - Analisa o nome das sequências para extrair localidades (última ou penúltima parte do nome, conforme o padrão).
    - Gera matriz de distribuição para o bloco TRAITS.
 
-4. **Detecção de Ambiguidade**
+4. **Tratamento Automático de Ambiguidades**
 
-   - Se encontrar N ou -, pergunta ao usuário como lidar (diferença ou substituição).
-   - Em caso de empate, exibe um popup para decisão manual.
+   - Posições com N ou - são automaticamente excluídas da comparação.
+   - Abordagem conservadora: só compara posições com nucleotídeos válidos (A, T, C, G).
+   - Exemplo: Sequência `ATNG-CTAG` → compara apenas posições 1, 2, 6, 7, 8, 9.
 
 5. **Geração do NEXUS**
 
