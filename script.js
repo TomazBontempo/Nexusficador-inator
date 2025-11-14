@@ -603,9 +603,7 @@ function updatePreviews(parsed) {
   // Haplotype preview (all)
   const hapPreview = parsed.haplotypes
     .map((hap) => {
-      return `${hap.id}: ${hap.count} seq(s) - ${hap.samples
-        .slice(0, 3)
-        .join(", ")}${hap.samples.length > 3 ? "..." : ""}`;
+      return `${hap.id}: ${hap.count} seq(s) - ${hap.samples.join(", ")}`;
     })
     .join("\n");
 
