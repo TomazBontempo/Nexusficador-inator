@@ -26,6 +26,9 @@ let selectionBoxEnd = null;
 let isSpacePressed = false;
 let isPanning = false;
 
+// Node size scaling (only for non-median nodes)
+let nodeScale = 1.0;
+
 let customColors = {
   locations: {}, // { locationName: "rgba(...)" }
   median: "rgba(255, 16, 240, 1)",
@@ -88,12 +91,30 @@ function init() {
     tooltip: document.getElementById("tooltip"),
     tipIcon: document.getElementById("tipIcon"),
     tipContent: document.getElementById("tipContent"),
+    nodeSizeSlider: document.getElementById("nodeSizeSlider"),
   };
 
   canvas = elements.networkCanvas;
   ctx = canvas.getContext("2d", { willReadFrequently: true });
   setupEventListeners();
   resizeCanvas();
+
+  // Node size slider
+  if (elements.nodeSizeSlider) {
+    elements.nodeSizeSlider.addEventListener("input", (e) => {
+      nodeScale = parseFloat(e.target.value);
+      if (network) renderNetwork();
+    });
+
+    // Prevent space bar from being captured by the slider
+    elements.nodeSizeSlider.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        // Blur the slider to return focus to the document
+        elements.nodeSizeSlider.blur();
+      }
+    });
+  }
 }
 
 // ===== Event Listeners =====
@@ -161,6 +182,17 @@ function setupEventListeners() {
   // Keyboard events for space bar panning
   document.addEventListener("keydown", handleKeyDown);
   document.addEventListener("keyup", handleKeyUp);
+
+  // Prevent space bar from scrolling the page globally
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.code === "Space" && e.target === document.body) {
+        e.preventDefault();
+      }
+    },
+    true
+  ); // Use capture phase to catch it early
 
   // Export buttons
   elements.resetLayoutBtn.addEventListener("click", resetLayout);
@@ -1513,18 +1545,22 @@ function doRender() {
     const isBeingDragged = isDraggingNode && draggedNode === node;
     const isSelected = selectedNodes.includes(node);
 
+    // Apply nodeScale only to non-median nodes
+    const effectiveSize = node.isMedian ? node.size : node.size * nodeScale;
+
     // Check if node has multiple locations (for pie chart)
     const locationData = getNodeLocationData(node);
 
     if (locationData.multipleLocations) {
       // Draw pie chart for nodes with multiple locations
-      drawPieChartNode(ctx, node, locationData, isBeingDragged);
+      const scaledNode = { ...node, size: effectiveSize };
+      drawPieChartNode(ctx, scaledNode, locationData, isBeingDragged);
     } else {
       // Draw solid color node
       const color = getNodeColor(node);
 
       ctx.beginPath();
-      ctx.arc(node.x, node.y, node.size, 0, 2 * Math.PI);
+      ctx.arc(node.x, node.y, effectiveSize, 0, 2 * Math.PI);
       ctx.fillStyle = color;
       ctx.fill();
 
@@ -1546,7 +1582,7 @@ function doRender() {
         ctx.shadowColor = color;
         ctx.shadowBlur = 20;
         ctx.beginPath();
-        ctx.arc(node.x, node.y, node.size, 0, 2 * Math.PI);
+        ctx.arc(node.x, node.y, effectiveSize, 0, 2 * Math.PI);
         ctx.stroke();
         ctx.shadowBlur = 0;
       }
@@ -1555,7 +1591,7 @@ function doRender() {
     // Draw selection highlight
     if (isSelected) {
       ctx.beginPath();
-      ctx.arc(node.x, node.y, node.size + 5, 0, 2 * Math.PI);
+      ctx.arc(node.x, node.y, effectiveSize + 5, 0, 2 * Math.PI);
       ctx.strokeStyle = "#ffc107";
       ctx.lineWidth = 3;
       ctx.stroke();
@@ -1563,8 +1599,9 @@ function doRender() {
 
     // Draw label only for non-median nodes
     if (!node.isMedian && node.label) {
+      const fontSize = 14 * nodeScale; // Scale font with node size
       ctx.fillStyle = customColors.edge;
-      ctx.font = "bold 14px Inter";
+      ctx.font = `bold ${fontSize}px Inter`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(node.label, node.x, node.y);
@@ -2266,13 +2303,13 @@ function handleMouseLeave() {
 }
 
 function handleKeyDown(e) {
-  // Check if input/textarea is focused
+  // Check if input/textarea is focused (but exclude range slider for Space key)
   const activeElement = document.activeElement;
   const isInputFocused =
     activeElement &&
-    (activeElement.tagName === "INPUT" ||
-      activeElement.tagName === "TEXTAREA" ||
-      activeElement.isContentEditable);
+    (activeElement.tagName === "TEXTAREA" ||
+      activeElement.isContentEditable ||
+      (activeElement.tagName === "INPUT" && activeElement.type !== "range")); // Exclude range slider
 
   if (e.code === "Space" && !isSpacePressed && !isInputFocused) {
     e.preventDefault(); // Prevent page scroll
@@ -2323,7 +2360,9 @@ function getNodeAtPosition(x, y) {
     const dx = x - node.x;
     const dy = y - node.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist <= node.size) {
+    // Use effective size (scaled for non-median nodes)
+    const effectiveSize = node.isMedian ? node.size : node.size * nodeScale;
+    if (dist <= effectiveSize) {
       return node;
     }
   }
