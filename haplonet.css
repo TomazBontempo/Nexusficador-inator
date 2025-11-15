@@ -625,7 +625,7 @@ h2 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .legend h3 {
@@ -728,6 +728,7 @@ h2 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-top: 5px;
 }
 
 /* ===== Tooltip ===== */
@@ -793,6 +794,60 @@ h2 {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* ===== Tip Container ===== */
+.tip-container {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  z-index: 100;
+}
+
+.tip-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.3s ease;
+  line-height: 1;
+}
+
+.tip-icon i {
+  font-size: 32px;
+  color: rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease;
+}
+
+.tip-icon:hover i {
+  color: var(--primary-color);
+  filter: drop-shadow(0 0 8px rgba(255, 193, 7, 0.6));
+  transform: scale(1.15);
+}
+
+.tip-content {
+  position: absolute;
+  bottom: 45px;
+  right: 0;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: tipFadeIn 0.2s ease;
+}
+
+@keyframes tipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

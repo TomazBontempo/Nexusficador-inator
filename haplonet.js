@@ -17,10 +17,19 @@ let selectedLocation = null;
 let geoData = null;
 let originalLayout = null; // Store original node positions
 let renderScheduled = false; // Flag to prevent multiple render calls
+
+// Multi-selection and panning state
+let selectedNodes = [];
+let isSelectingBox = false;
+let selectionBoxStart = null;
+let selectionBoxEnd = null;
+let isSpacePressed = false;
+let isPanning = false;
+
 let customColors = {
   locations: {}, // { locationName: "rgba(...)" }
   median: "rgba(255, 16, 240, 1)",
-  edge: "rgba(71, 85, 105, 1)",
+  edge: "#000000",
   background: "rgba(255, 255, 255, 0)",
   mutation: "rgba(148, 163, 184, 1)",
 };
@@ -77,6 +86,8 @@ function init() {
     successToast: document.getElementById("successToast"),
     toastMessage: document.getElementById("toastMessage"),
     tooltip: document.getElementById("tooltip"),
+    tipIcon: document.getElementById("tipIcon"),
+    tipContent: document.getElementById("tipContent"),
   };
 
   canvas = elements.networkCanvas;
@@ -87,6 +98,26 @@ function init() {
 
 // ===== Event Listeners =====
 function setupEventListeners() {
+  // Tip icon toggle
+  if (elements.tipIcon && elements.tipContent) {
+    elements.tipIcon.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isVisible = elements.tipContent.style.display !== "none";
+      elements.tipContent.style.display = isVisible ? "none" : "block";
+    });
+
+    // Close tip when clicking outside
+    document.addEventListener("click", (e) => {
+      if (
+        elements.tipContent.style.display === "block" &&
+        !elements.tipContent.contains(e.target) &&
+        !elements.tipIcon.contains(e.target)
+      ) {
+        elements.tipContent.style.display = "none";
+      }
+    });
+  }
+
   // File selection
   elements.selectFileBtn.addEventListener("click", () =>
     elements.fastaInput.click()
@@ -126,6 +157,10 @@ function setupEventListeners() {
   canvas.addEventListener("mouseup", handleMouseUp);
   canvas.addEventListener("mouseleave", handleMouseLeave);
   canvas.addEventListener("wheel", handleWheel);
+
+  // Keyboard events for space bar panning
+  document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("keyup", handleKeyUp);
 
   // Export buttons
   elements.resetLayoutBtn.addEventListener("click", resetLayout);
@@ -1476,6 +1511,7 @@ function doRender() {
   // Draw nodes
   network.nodes.forEach((node) => {
     const isBeingDragged = isDraggingNode && draggedNode === node;
+    const isSelected = selectedNodes.includes(node);
 
     // Check if node has multiple locations (for pie chart)
     const locationData = getNodeLocationData(node);
@@ -1498,9 +1534,9 @@ function doRender() {
         ctx.strokeStyle = "#0f172a";
         ctx.lineWidth = 2;
       } else {
-        // Observed haplotypes: normal border
+        // Observed haplotypes: border uses customColors.edge
         const isHighlighted = hoveredNode === node || isBeingDragged;
-        ctx.strokeStyle = isHighlighted ? "#f1f5f9" : "#1e293b";
+        ctx.strokeStyle = isHighlighted ? "#f1f5f9" : customColors.edge;
         ctx.lineWidth = isHighlighted ? 3 : 2;
       }
       ctx.stroke();
@@ -1516,15 +1552,41 @@ function doRender() {
       }
     }
 
+    // Draw selection highlight
+    if (isSelected) {
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, node.size + 5, 0, 2 * Math.PI);
+      ctx.strokeStyle = "#ffc107";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
     // Draw label only for non-median nodes
     if (!node.isMedian && node.label) {
-      ctx.fillStyle = node.count > 5 ? "#ffffff" : "#0f172a";
+      ctx.fillStyle = customColors.edge;
       ctx.font = "bold 14px Inter";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(node.label, node.x, node.y);
     }
   });
+
+  // Draw selection box
+  if (isSelectingBox && selectionBoxStart && selectionBoxEnd) {
+    const minX = Math.min(selectionBoxStart.x, selectionBoxEnd.x);
+    const minY = Math.min(selectionBoxStart.y, selectionBoxEnd.y);
+    const width = Math.abs(selectionBoxEnd.x - selectionBoxStart.x);
+    const height = Math.abs(selectionBoxEnd.y - selectionBoxStart.y);
+
+    ctx.strokeStyle = "#ffc107";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(minX, minY, width, height);
+
+    ctx.fillStyle = "rgba(255, 193, 7, 0.1)";
+    ctx.fillRect(minX, minY, width, height);
+    ctx.setLineDash([]);
+  }
 
   ctx.restore();
   console.log("Network rendered successfully");
@@ -2019,69 +2081,174 @@ function handleMouseDown(e) {
 
   hoveredNode = getNodeAtPosition(x, y);
 
-  if (hoveredNode) {
-    // Start dragging the node
-    isDraggingNode = true;
-    draggedNode = hoveredNode;
-    canvas.style.cursor = "grabbing";
-  } else {
-    // Start dragging the canvas
-    isDragging = true;
+  // Panning mode (space pressed)
+  if (isSpacePressed) {
+    isPanning = true;
     dragStartX = e.clientX - offsetX;
     dragStartY = e.clientY - offsetY;
     canvas.style.cursor = "grabbing";
+    return;
+  }
+
+  // Clicked on a node
+  if (hoveredNode) {
+    if (e.shiftKey) {
+      // Shift + click: toggle node selection
+      const index = selectedNodes.indexOf(hoveredNode);
+      if (index > -1) {
+        selectedNodes.splice(index, 1);
+      } else {
+        selectedNodes.push(hoveredNode);
+      }
+      renderNetwork();
+    } else {
+      // Regular click on node
+      if (!selectedNodes.includes(hoveredNode)) {
+        // If clicking on unselected node, select only this one
+        selectedNodes = [hoveredNode];
+      }
+      // Start dragging node(s)
+      isDraggingNode = true;
+      draggedNode = hoveredNode;
+      dragStartX = x;
+      dragStartY = y;
+      canvas.style.cursor = "grabbing";
+    }
+  } else {
+    // Clicked on empty space
+    if (!e.shiftKey) {
+      // Clear selection if not holding shift
+      selectedNodes = [];
+    }
+    // Start selection box
+    isSelectingBox = true;
+    selectionBoxStart = { x, y };
+    selectionBoxEnd = { x, y };
+    renderNetwork();
   }
 }
 
 function handleMouseMove(e) {
-  if (isDragging || isDraggingNode) {
-    e.preventDefault();
-  }
   const rect = canvas.getBoundingClientRect();
   const x = (e.clientX - rect.left - offsetX) / scale;
   const y = (e.clientY - rect.top - offsetY) / scale;
 
-  if (isDraggingNode && draggedNode) {
-    // Drag the node
-    draggedNode.x = x;
-    draggedNode.y = y;
-    renderNetwork();
-    hideTooltip(); // Hide tooltip while dragging
-  } else if (isDragging) {
-    // Drag the canvas
+  // Panning the network
+  if (isPanning) {
+    e.preventDefault();
     offsetX = e.clientX - dragStartX;
     offsetY = e.clientY - dragStartY;
     renderNetwork();
+    return;
+  }
+
+  // Dragging node(s)
+  if (isDraggingNode && draggedNode) {
+    e.preventDefault();
+    const dx = x - dragStartX;
+    const dy = y - dragStartY;
+
+    // Move all selected nodes
+    selectedNodes.forEach((node) => {
+      node.x += dx;
+      node.y += dy;
+    });
+
+    dragStartX = x;
+    dragStartY = y;
+    renderNetwork();
+    hideTooltip();
+    return;
+  }
+
+  // Drawing selection box
+  if (isSelectingBox) {
+    e.preventDefault();
+    selectionBoxEnd = { x, y };
+    renderNetwork();
+    return;
+  }
+
+  // Hover detection
+  const node = getNodeAtPosition(x, y);
+
+  // Update cursor
+  if (isSpacePressed) {
+    canvas.style.cursor = "grab";
+  } else if (node) {
+    canvas.style.cursor = "move";
   } else {
-    // Hover detection
-    const node = getNodeAtPosition(x, y);
+    canvas.style.cursor = "default";
+  }
 
-    // Update cursor
-    if (node) {
-      canvas.style.cursor = "grab";
-    } else {
-      canvas.style.cursor = "default";
-    }
+  if (node !== hoveredNode) {
+    hoveredNode = node;
+    if (hoveredNode) renderNetwork();
+  }
 
-    if (node !== hoveredNode) {
-      hoveredNode = node;
-      // Only re-render if needed for visual feedback
-      if (hoveredNode) renderNetwork();
-    }
-
-    if (node) {
-      showTooltip(e.clientX, e.clientY, node);
-    } else {
-      hideTooltip();
-    }
+  if (node) {
+    showTooltip(e.clientX, e.clientY, node);
+  } else {
+    hideTooltip();
   }
 }
 
 function handleMouseUp() {
-  isDragging = false;
-  isDraggingNode = false;
-  draggedNode = null;
-  canvas.style.cursor = hoveredNode ? "grab" : "default";
+  // End panning
+  if (isPanning) {
+    isPanning = false;
+    canvas.style.cursor = isSpacePressed ? "grab" : "default";
+    return;
+  }
+
+  // End node dragging
+  if (isDraggingNode) {
+    isDraggingNode = false;
+    draggedNode = null;
+    canvas.style.cursor = isSpacePressed
+      ? "grab"
+      : hoveredNode
+      ? "move"
+      : "default";
+    return;
+  }
+
+  // End selection box
+  if (isSelectingBox) {
+    isSelectingBox = false;
+
+    // Select nodes within the box
+    if (selectionBoxStart && selectionBoxEnd) {
+      const minX = Math.min(selectionBoxStart.x, selectionBoxEnd.x);
+      const maxX = Math.max(selectionBoxStart.x, selectionBoxEnd.x);
+      const minY = Math.min(selectionBoxStart.y, selectionBoxEnd.y);
+      const maxY = Math.max(selectionBoxStart.y, selectionBoxEnd.y);
+
+      const nodesInBox = network.nodes.filter((node) => {
+        return (
+          node.x >= minX && node.x <= maxX && node.y >= minY && node.y <= maxY
+        );
+      });
+
+      // Add to selection (if shift was held during drag, nodes are already preserved)
+      nodesInBox.forEach((node) => {
+        if (!selectedNodes.includes(node)) {
+          selectedNodes.push(node);
+        }
+      });
+    }
+
+    selectionBoxStart = null;
+    selectionBoxEnd = null;
+    renderNetwork();
+    return;
+  }
+
+  canvas.style.cursor = isSpacePressed
+    ? "grab"
+    : hoveredNode
+    ? "move"
+    : "default";
 }
 
 function handleMouseLeave() {
@@ -2089,9 +2256,48 @@ function handleMouseLeave() {
   isDraggingNode = false;
   draggedNode = null;
   hoveredNode = null;
+  isPanning = false;
+  isSelectingBox = false;
+  selectionBoxStart = null;
+  selectionBoxEnd = null;
   hideTooltip();
   canvas.style.cursor = "default";
   renderNetwork();
+}
+
+function handleKeyDown(e) {
+  // Check if input/textarea is focused
+  const activeElement = document.activeElement;
+  const isInputFocused =
+    activeElement &&
+    (activeElement.tagName === "INPUT" ||
+      activeElement.tagName === "TEXTAREA" ||
+      activeElement.isContentEditable);
+
+  if (e.code === "Space" && !isSpacePressed && !isInputFocused) {
+    e.preventDefault(); // Prevent page scroll
+    isSpacePressed = true;
+    if (canvas) {
+      canvas.style.cursor = "grab";
+    }
+  }
+
+  // ESC to clear selection
+  if (e.code === "Escape") {
+    selectedNodes = [];
+    renderNetwork();
+  }
+}
+
+function handleKeyUp(e) {
+  if (e.code === "Space") {
+    e.preventDefault();
+    isSpacePressed = false;
+    isPanning = false;
+    if (canvas) {
+      canvas.style.cursor = hoveredNode ? "move" : "default";
+    }
+  }
 }
 
 function handleWheel(e) {
