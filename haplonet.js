@@ -26,6 +26,14 @@ let selectionBoxEnd = null;
 let isSpacePressed = false;
 let isPanning = false;
 
+// Label dragging state
+let isDraggingLabel = false;
+let draggedLabelNode = null;
+let labelDragStartX = 0;
+let labelDragStartY = 0;
+let hoveredLabel = null;
+let globalLabelPosition = "center"; // 'center', 'top', 'bottom', 'left', 'right'
+
 // Node size scaling (only for non-median nodes)
 let nodeScale = 1.0;
 
@@ -703,6 +711,7 @@ function buildNetwork(haplotypes, epsilon = 0) {
     vx: 0,
     vy: 0,
     isMedian: false,
+    labelPosition: "center",
   }));
 
   return buildMedianJoiningNetwork(nodes, epsilon);
@@ -823,6 +832,7 @@ function buildMedianJoiningNetwork(initialNodes, epsilon = 0) {
           vx: 0,
           vy: 0,
           isMedian: true,
+          labelPosition: "center",
         });
       }
       changed = true;
@@ -1294,6 +1304,7 @@ function createMedianPath(nodes, startIdx, endIdx, distance) {
       vx: 0,
       vy: 0,
       isMedian: true,
+      labelPosition: "center",
     };
 
     nodes.push(medianNode);
@@ -1666,13 +1677,85 @@ function doRender() {
     // Draw label only for non-median nodes
     if (!node.isMedian && node.label) {
       const fontSize = 14 * nodeScale; // Scale font with node size
+      const labelPos = calculateLabelPosition(node);
+
+      // Highlight label if hovered or being dragged
+      if (hoveredLabel === node || draggedLabelNode === node) {
+        ctx.save();
+        ctx.shadowColor = "rgba(255, 193, 7, 0.6)";
+        ctx.shadowBlur = 10;
+      }
+
       ctx.fillStyle = customColors.edge;
       ctx.font = `bold ${fontSize}px Inter`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(node.label, node.x, node.y);
+      ctx.fillText(node.label, labelPos.x, labelPos.y);
+
+      if (hoveredLabel === node || draggedLabelNode === node) {
+        ctx.restore();
+      }
     }
   });
+
+  // Draw position zones visual feedback during label drag
+  if (isDraggingLabel && draggedLabelNode) {
+    const node = draggedLabelNode;
+    const effectiveSize = node.isMedian ? node.size : node.size * nodeScale;
+    const offset = effectiveSize + 15;
+    const zoneRadius = 25;
+    const isApplyToAll = node._applyToAll;
+
+    // Draw snap zones
+    const zones = [
+      { pos: "center", x: node.x, y: node.y, label: "●" },
+      { pos: "top", x: node.x, y: node.y - offset, label: "▲" },
+      { pos: "bottom", x: node.x, y: node.y + offset, label: "▼" },
+      { pos: "left", x: node.x - offset, y: node.y, label: "◄" },
+      { pos: "right", x: node.x + offset, y: node.y, label: "►" },
+    ];
+
+    zones.forEach((zone) => {
+      const currentPosition = node.labelPosition || globalLabelPosition;
+      const isActive = zone.pos === currentPosition;
+
+      // Use yellow for Shift mode (all), blue for normal (individual)
+      const activeColor = isApplyToAll
+        ? "rgba(255, 193, 7, 0.3)"
+        : "rgba(99, 102, 241, 0.5)";
+      const activeBorderColor = isApplyToAll
+        ? "rgba(255, 193, 7, 0.8)"
+        : "rgba(99, 102, 241, 1)";
+      const iconColor = isApplyToAll ? "#ffc107" : "#6366f1";
+
+      ctx.beginPath();
+      ctx.arc(zone.x, zone.y, zoneRadius, 0, 2 * Math.PI);
+      ctx.fillStyle = isActive ? activeColor : "rgba(100, 100, 100, 0.2)";
+      ctx.fill();
+      ctx.strokeStyle = isActive
+        ? activeBorderColor
+        : "rgba(100, 100, 100, 0.5)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw zone icon
+      ctx.fillStyle = isActive ? iconColor : "#666";
+      ctx.font = "bold 18px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(zone.label, zone.x, zone.y);
+    });
+
+    // Draw mode indicator text
+    ctx.save();
+    ctx.fillStyle = isApplyToAll ? "#ffc107" : "#6366f1";
+    ctx.font = "bold 12px Inter";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    const modeText = isApplyToAll ? "TODOS" : "APENAS ESTE";
+    ctx.fillText(modeText, node.x, node.y + effectiveSize + 35);
+    ctx.restore();
+  }
 
   // Draw selection box
   if (isSelectingBox && selectionBoxStart && selectionBoxEnd) {
@@ -2338,8 +2421,6 @@ function handleMouseDown(e) {
   const x = (e.clientX - rect.left - offsetX) / scale;
   const y = (e.clientY - rect.top - offsetY) / scale;
 
-  hoveredNode = getNodeAtPosition(x, y);
-
   // Panning mode (space pressed)
   if (isSpacePressed) {
     isPanning = true;
@@ -2348,6 +2429,21 @@ function handleMouseDown(e) {
     canvas.style.cursor = "grabbing";
     return;
   }
+
+  // Check if clicking on a label first (higher priority)
+  const labelNode = getLabelAtPosition(x, y);
+  if (labelNode) {
+    isDraggingLabel = true;
+    draggedLabelNode = labelNode;
+    labelDragStartX = x;
+    labelDragStartY = y;
+    canvas.style.cursor = "grabbing";
+    // Store if Shift is pressed - Shift = apply to all, no Shift = individual
+    draggedLabelNode._applyToAll = e.shiftKey;
+    return;
+  }
+
+  hoveredNode = getNodeAtPosition(x, y);
 
   // Clicked on a node
   if (hoveredNode) {
@@ -2401,6 +2497,36 @@ function handleMouseMove(e) {
     return;
   }
 
+  // Dragging label
+  if (isDraggingLabel && draggedLabelNode) {
+    e.preventDefault();
+
+    // Calculate snap position based on drag
+    const newPosition = getSnapPosition(
+      x,
+      y,
+      draggedLabelNode.x,
+      draggedLabelNode.y
+    );
+
+    // Apply to all nodes (Shift) or single node (no Shift)
+    if (
+      newPosition !== (draggedLabelNode.labelPosition || globalLabelPosition)
+    ) {
+      if (draggedLabelNode._applyToAll) {
+        // Shift pressed: Apply to all nodes
+        applyLabelPositionToAll(newPosition);
+      } else {
+        // No Shift: Apply only to this node
+        draggedLabelNode.labelPosition = newPosition;
+        renderNetwork();
+      }
+    }
+
+    hideTooltip();
+    return;
+  }
+
   // Dragging node(s)
   if (isDraggingNode && draggedNode) {
     e.preventDefault();
@@ -2428,7 +2554,18 @@ function handleMouseMove(e) {
     return;
   }
 
-  // Hover detection
+  // Hover detection for labels
+  const labelNode = getLabelAtPosition(x, y);
+  if (labelNode) {
+    hoveredLabel = labelNode;
+    canvas.style.cursor = isSpacePressed ? "grab" : "move";
+    renderNetwork();
+    return;
+  } else {
+    hoveredLabel = null;
+  }
+
+  // Hover detection for nodes
   const node = getNodeAtPosition(x, y);
 
   // Update cursor
@@ -2457,6 +2594,41 @@ function handleMouseUp() {
   if (isPanning) {
     isPanning = false;
     canvas.style.cursor = isSpacePressed ? "grab" : "default";
+    return;
+  }
+
+  // End label dragging
+  if (isDraggingLabel) {
+    const wasApplyToAll = draggedLabelNode && draggedLabelNode._applyToAll;
+    isDraggingLabel = false;
+
+    if (draggedLabelNode) {
+      delete draggedLabelNode._applyToAll;
+    }
+
+    draggedLabelNode = null;
+    canvas.style.cursor = isSpacePressed
+      ? "grab"
+      : hoveredLabel || hoveredNode
+      ? "move"
+      : "default";
+
+    const positionName =
+      globalLabelPosition === "center"
+        ? "Centro"
+        : globalLabelPosition === "top"
+        ? "Acima"
+        : globalLabelPosition === "bottom"
+        ? "Abaixo"
+        : globalLabelPosition === "left"
+        ? "Esquerda"
+        : "Direita";
+
+    showToast(
+      wasApplyToAll
+        ? `Posição de todos os textos: ${positionName}`
+        : `Texto movido para: ${positionName}`
+    );
     return;
   }
 
@@ -2514,7 +2686,10 @@ function handleMouseLeave() {
   isDragging = false;
   isDraggingNode = false;
   draggedNode = null;
+  isDraggingLabel = false;
+  draggedLabelNode = null;
   hoveredNode = null;
+  hoveredLabel = null;
   isPanning = false;
   isSelectingBox = false;
   selectionBoxStart = null;
@@ -2589,6 +2764,98 @@ function getNodeAtPosition(x, y) {
     }
   }
   return null;
+}
+
+// ===== Label Position Functions =====
+function getLabelAtPosition(x, y) {
+  if (!network) return null;
+
+  // Check labels in reverse order (topmost first)
+  for (let i = network.nodes.length - 1; i >= 0; i--) {
+    const node = network.nodes[i];
+
+    // Skip median nodes (no labels) or nodes without labels
+    if (node.isMedian || !node.label) continue;
+
+    const labelPos = calculateLabelPosition(node);
+    const fontSize = 14 * nodeScale;
+
+    // Measure text dimensions
+    ctx.font = `bold ${fontSize}px Inter`;
+    const textWidth = ctx.measureText(node.label).width;
+    const textHeight = fontSize;
+
+    // Check if mouse is over the label
+    if (
+      x >= labelPos.x - textWidth / 2 &&
+      x <= labelPos.x + textWidth / 2 &&
+      y >= labelPos.y - textHeight / 2 &&
+      y <= labelPos.y + textHeight / 2
+    ) {
+      return node;
+    }
+  }
+
+  return null;
+}
+
+function calculateLabelPosition(node, scale = null) {
+  // Use provided scale or default to global nodeScale
+  const scaleValue = scale !== null ? scale : nodeScale;
+  const effectiveSize = node.isMedian ? node.size : node.size * scaleValue;
+  const offset = effectiveSize + 15;
+
+  // Add extra padding for left/right to account for text width
+  const fontSize = 14 * scaleValue;
+  const textPadding = 8; // Extra space to prevent overlap
+
+  // Use node's individual position if set, otherwise use global
+  const position = node.labelPosition || globalLabelPosition;
+
+  switch (position) {
+    case "top":
+      return { x: node.x, y: node.y - offset };
+    case "bottom":
+      return { x: node.x, y: node.y + offset };
+    case "left":
+      return { x: node.x - offset - textPadding, y: node.y };
+    case "right":
+      return { x: node.x + offset + textPadding, y: node.y };
+    case "center":
+    default:
+      return { x: node.x, y: node.y };
+  }
+}
+
+function getSnapPosition(dragX, dragY, nodeX, nodeY) {
+  const dx = dragX - nodeX;
+  const dy = dragY - nodeY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+
+  // If very close to center, snap to center
+  if (distance < 20) {
+    return "center";
+  }
+
+  // Determine which quadrant/direction
+  const angle = Math.atan2(dy, dx);
+  const angleDeg = (angle * 180) / Math.PI;
+
+  // Snap to nearest cardinal direction
+  if (angleDeg >= -45 && angleDeg < 45) return "right";
+  if (angleDeg >= 45 && angleDeg < 135) return "bottom";
+  if (angleDeg >= 135 || angleDeg < -135) return "left";
+  return "top";
+}
+
+function applyLabelPositionToAll(position) {
+  globalLabelPosition = position;
+  if (network) {
+    network.nodes.forEach((node) => {
+      node.labelPosition = position;
+    });
+    renderNetwork();
+  }
 }
 
 // ===== Tooltip =====
@@ -2697,6 +2964,16 @@ function prepareNetworkExportData() {
     minY = Math.min(minY, node.y - margin);
     maxX = Math.max(maxX, node.x + margin);
     maxY = Math.max(maxY, node.y + margin);
+
+    // Consider label position for bounds (use scale 1.0 for export)
+    if (!node.isMedian && node.label) {
+      const labelPos = calculateLabelPosition(node, 1.0);
+      const labelMargin = 40; // Extra space for label text
+      minX = Math.min(minX, labelPos.x - labelMargin);
+      minY = Math.min(minY, labelPos.y - labelMargin);
+      maxX = Math.max(maxX, labelPos.x + labelMargin);
+      maxY = Math.max(maxY, labelPos.y + labelMargin);
+    }
   });
 
   const padding = 50;
@@ -2788,13 +3065,14 @@ function renderNetworkToPNG(exportData) {
       ctx.stroke();
     }
 
-    // Label do nó
+    // Label do nó - usar posição calculada
     if (!node.isMedian && node.label) {
-      ctx.fillStyle = node.count > 5 ? "#ffffff" : "#0f172a";
+      const labelPos = calculateLabelPosition(node, 1.0); // Use scale 1.0 for export
+      ctx.fillStyle = customColors.edge;
       ctx.font = "bold 14px Inter";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(node.label, node.x, node.y);
+      ctx.fillText(node.label, labelPos.x, labelPos.y);
     }
   });
 
