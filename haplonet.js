@@ -34,8 +34,63 @@ let customColors = {
   median: "rgba(255, 16, 240, 1)",
   edge: "#000000",
   background: "rgba(255, 255, 255, 0)",
-  mutation: "rgba(148, 163, 184, 1)",
+  mutation: "#FFFFFF",
 };
+
+// Store edited location names
+let locationNameMap = {}; // { originalName: editedName }
+
+// Helper function to calculate luminance for contrast
+function getLuminance(rgba) {
+  // Parse rgba string to get RGB values
+  const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!match) return 0.5; // Default to medium luminance if can't parse
+
+  const r = parseInt(match[1]) / 255;
+  const g = parseInt(match[2]) / 255;
+  const b = parseInt(match[3]) / 255;
+
+  // Convert to linear RGB
+  const rLinear = r <= 0.03928 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
+  const gLinear = g <= 0.03928 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4);
+  const bLinear = b <= 0.03928 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4);
+
+  // Calculate luminance
+  return 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
+}
+
+function getContrastTextColor(backgroundColor) {
+  const luminance = getLuminance(backgroundColor);
+  // If background is very light (luminance > 0.7), use dark text, otherwise use white text
+  return luminance > 0.7 ? "rgba(0, 0, 0, 0.9)" : "rgba(255, 255, 255, 0.95)";
+}
+
+// Helper functions for color conversion
+function rgbaToHex(rgba) {
+  const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!match) return "#999999";
+
+  const r = parseInt(match[1]);
+  const g = parseInt(match[2]);
+  const b = parseInt(match[3]);
+
+  return (
+    "#" +
+    [r, g, b]
+      .map((x) => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? "0" + hex : hex;
+      })
+      .join("")
+  );
+}
+
+function hexToRgba(hex, alpha = 1) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 // Pickr instances
 let pickrInstances = {
@@ -67,6 +122,7 @@ function init() {
     networkSection: document.getElementById("networkSection"),
     showMutations: document.getElementById("showMutations"),
     mutationToggle: document.getElementById("mutationToggle"),
+    includeLegendOnExport: document.getElementById("includeLegendOnExport"),
     mutationColor: document.getElementById("mutationColor"),
     locationConfig: document.getElementById("locationConfig"),
     locationSelection: document.getElementById("locationSelection"),
@@ -75,7 +131,6 @@ function init() {
     backgroundColor: document.getElementById("backgroundColor"),
     generateNetworkBtn: document.getElementById("generateNetworkBtn"),
     exportPNGBtn: document.getElementById("exportPNGBtn"),
-    exportSVGBtn: document.getElementById("exportSVGBtn"),
     resetLayoutBtn: document.getElementById("resetLayoutBtn"),
     networkCanvas: document.getElementById("networkCanvas"),
     nodeCount: document.getElementById("nodeCount"),
@@ -92,6 +147,9 @@ function init() {
     tipIcon: document.getElementById("tipIcon"),
     tipContent: document.getElementById("tipContent"),
     nodeSizeSlider: document.getElementById("nodeSizeSlider"),
+    canvasLegendPanel: document.getElementById("canvasLegendPanel"),
+    canvasLegendProportion: document.getElementById("canvasLegendProportion"),
+    canvasLegendLocations: document.getElementById("canvasLegendLocations"),
   };
 
   canvas = elements.networkCanvas;
@@ -197,7 +255,6 @@ function setupEventListeners() {
   // Export buttons
   elements.resetLayoutBtn.addEventListener("click", resetLayout);
   elements.exportPNGBtn.addEventListener("click", exportPNG);
-  elements.exportSVGBtn.addEventListener("click", exportSVG);
 
   // Resize
   window.addEventListener("resize", resizeCanvas);
@@ -614,7 +671,8 @@ function generateNetwork() {
           elements.edgeCount.textContent = network.edges.length;
           elements.componentCount.textContent = countComponents(network);
 
-          displayLegend();
+          enableGlobalColorPickers();
+          updateCanvasLegend(); // Show canvas legend panel
 
           showToast("Rede gerada com sucesso!");
           showLoading(false);
@@ -1755,7 +1813,22 @@ function drawPieChartNode(ctx, node, locationData, isBeingDragged = false) {
         "#14b8a6",
         "#06b6d4",
         "#3b82f6",
-        "#6366f1",
+        "#f97316",
+        "#a855f7",
+        "#ec86d6",
+        "#fb923c",
+        "#22c55e",
+        "#0ea5e9",
+        "#d946ef",
+        "#84cc16",
+        "#facc15",
+        "#fb7185",
+        "#0e7490",
+        "#7c3aed",
+        "#db2777",
+        "#c2410c",
+        "#15803d",
+        "#1e40af",
       ];
       color =
         locationIndex >= 0
@@ -1844,96 +1917,6 @@ function getNodeColor(node) {
   return locationIndex >= 0 ? colors[locationIndex % colors.length] : "#6366f1";
 }
 
-function displayLegend() {
-  if (!geoData || !selectedLocation) {
-    elements.legend.style.display = "none";
-    disableGlobalColorPickers();
-    return;
-  }
-
-  const locationList =
-    selectedLocation === "location01" ? geoData.location01 : geoData.location02;
-
-  if (locationList.length === 0) {
-    elements.legend.style.display = "none";
-    disableGlobalColorPickers();
-    return;
-  }
-
-  elements.legendContent.innerHTML = "";
-
-  const defaultColors = [
-    "rgba(99, 102, 241, 1)",
-    "rgba(139, 92, 246, 1)",
-    "rgba(236, 72, 153, 1)",
-    "rgba(244, 63, 94, 1)",
-    "rgba(245, 158, 11, 1)",
-    "rgba(16, 185, 129, 1)",
-    "rgba(20, 184, 166, 1)",
-    "rgba(6, 182, 212, 1)",
-    "rgba(59, 130, 246, 1)",
-    "rgba(99, 102, 241, 1)",
-  ];
-
-  locationList.forEach((location, i) => {
-    // Initialize color if not set
-    if (!customColors.locations[location]) {
-      customColors.locations[location] =
-        defaultColors[i % defaultColors.length];
-    }
-
-    const item = document.createElement("div");
-    item.className = "legend-item";
-
-    // Create container for Pickr
-    const pickerContainer = document.createElement("div");
-    pickerContainer.className = "location-color-picker";
-    pickerContainer.id = `location-picker-${i}`;
-
-    const label = document.createElement("span");
-    label.textContent = location;
-
-    item.appendChild(pickerContainer);
-    item.appendChild(label);
-    elements.legendContent.appendChild(item);
-
-    // Create Pickr instance for this location
-    const pickr = Pickr.create({
-      el: `#location-picker-${i}`,
-      theme: "monolith",
-      position: "top-middle",
-      default: customColors.locations[location],
-      defaultRepresentation: "HEXA",
-      components: {
-        preview: true,
-        opacity: true,
-        hue: true,
-        interaction: {
-          hex: true,
-          rgba: true,
-          input: true,
-          save: false,
-        },
-      },
-    });
-
-    pickr.on("change", (color) => {
-      if (color) {
-        customColors.locations[location] = color.toRGBA().toString();
-        // Atualizar a cor do botão em tempo real
-        pickr.applyColor(true);
-        if (network) renderNetwork();
-      }
-    });
-
-    // Inicializar com a cor atual
-    pickr.setColor(customColors.locations[location], true);
-  });
-
-  elements.legend.style.display = "block";
-  enableGlobalColorPickers();
-}
-
 function enableGlobalColorPickers() {
   // Destroy old instances if they exist
   if (pickrInstances.background) pickrInstances.background.destroyAndRemove();
@@ -1967,6 +1950,7 @@ function enableGlobalColorPickers() {
       // Atualizar a cor do botão em tempo real
       pickrInstances.background.applyColor(true);
       if (network) renderNetwork();
+      updateLegendTextColor(); // Atualiza só a cor do texto do painel
     }
   });
 
@@ -2090,8 +2074,238 @@ function disableGlobalColorPickers() {
   }
 }
 
-function updateLegend() {
-  displayLegend();
+// ===== Canvas Legend Panel =====
+function updateCanvasLegend() {
+  if (!network || !geoData || !selectedLocation) {
+    if (elements.canvasLegendPanel) {
+      elements.canvasLegendPanel.style.display = "none";
+    }
+    return;
+  }
+
+  const locationList =
+    selectedLocation === "location01" ? geoData.location01 : geoData.location02;
+
+  if (locationList.length === 0) {
+    elements.canvasLegendPanel.style.display = "none";
+    return;
+  }
+
+  // Show panel
+  elements.canvasLegendPanel.style.display = "block";
+
+  // Update proportion graphic
+  updateProportionGraphic();
+
+  // Update location list
+  updateCanvasLegendLocations(locationList);
+
+  // Update text color based on background luminance (must be after elements are created)
+  updateLegendTextColor();
+}
+
+function updateLegendTextColor() {
+  const textColor = getContrastTextColor(customColors.background);
+  if (elements.canvasLegendPanel) {
+    elements.canvasLegendPanel.style.setProperty(
+      "--legend-text-color",
+      textColor
+    );
+  }
+}
+
+function updateProportionGraphic() {
+  if (!network) return;
+
+  elements.canvasLegendProportion.innerHTML = "";
+
+  // Create container for circles
+  const circlesContainer = document.createElement("div");
+  circlesContainer.style.display = "flex";
+  circlesContainer.style.alignItems = "center";
+  circlesContainer.style.gap = "8px";
+
+  // Create 2 circles with 1:10 proportion
+  const proportions = [
+    { label: "1", size: 25 },
+    { label: "10", size: 55 },
+  ];
+
+  proportions.forEach((prop) => {
+    const circle = document.createElement("div");
+    circle.className = "proportion-circle";
+    circle.style.width = `${prop.size}px`;
+    circle.style.height = `${prop.size}px`;
+    circle.style.lineHeight = `${prop.size}px`;
+    circle.style.fontSize = prop.size < 30 ? "0.7rem" : "0.9rem";
+    circle.textContent = prop.label;
+    circlesContainer.appendChild(circle);
+  });
+
+  elements.canvasLegendProportion.appendChild(circlesContainer);
+
+  // Add label below circles
+  const label = document.createElement("div");
+  label.className = "proportion-label";
+  label.textContent = "Nº de sequências";
+  label.style.marginTop = "4px";
+  elements.canvasLegendProportion.appendChild(label);
+}
+
+function updateCanvasLegendLocations(locationList) {
+  elements.canvasLegendLocations.innerHTML = "";
+
+  const defaultColors = [
+    "rgba(99, 102, 241, 1)", // Indigo
+    "rgba(139, 92, 246, 1)", // Purple
+    "rgba(236, 72, 153, 1)", // Pink
+    "rgba(244, 63, 94, 1)", // Rose
+    "rgba(245, 158, 11, 1)", // Amber
+    "rgba(16, 185, 129, 1)", // Emerald
+    "rgba(20, 184, 166, 1)", // Teal
+    "rgba(6, 182, 212, 1)", // Cyan
+    "rgba(59, 130, 246, 1)", // Blue
+    "rgba(249, 115, 22, 1)", // Orange
+    "rgba(168, 85, 247, 1)", // Violet
+    "rgba(236, 134, 214, 1)", // Fuchsia
+    "rgba(251, 146, 60, 1)", // Deep Orange
+    "rgba(34, 197, 94, 1)", // Green
+    "rgba(14, 165, 233, 1)", // Sky
+    "rgba(217, 70, 239, 1)", // Magenta
+    "rgba(132, 204, 22, 1)", // Lime
+    "rgba(250, 204, 21, 1)", // Yellow
+    "rgba(251, 113, 133, 1)", // Light Rose
+    "rgba(14, 116, 144, 1)", // Dark Teal
+    "rgba(124, 58, 237, 1)", // Deep Purple
+    "rgba(219, 39, 119, 1)", // Deep Pink
+    "rgba(194, 65, 12, 1)", // Dark Orange
+    "rgba(21, 128, 61, 1)", // Dark Green
+    "rgba(30, 64, 175, 1)", // Deep Blue
+  ];
+
+  locationList.forEach((location, index) => {
+    // Initialize color if not set
+    if (!customColors.locations[location]) {
+      customColors.locations[location] =
+        defaultColors[index % defaultColors.length];
+    }
+
+    const item = document.createElement("div");
+    item.className = "canvas-legend-item";
+
+    // Create Pickr color picker button (same as in main legend)
+    const pickerContainer = document.createElement("div");
+    pickerContainer.className = "location-color-picker";
+    pickerContainer.id = `canvas-location-picker-${index}`;
+
+    // Get the display name (edited or original)
+    const displayName = locationNameMap[location] || location;
+
+    // Editable name label
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.className = "canvas-legend-name";
+    nameInput.value = displayName;
+    nameInput.dataset.originalName = location; // Keep track of the original key
+
+    // Handle name editing
+    nameInput.addEventListener("blur", function () {
+      const newName = this.value.trim();
+      const originalKey = this.dataset.originalName;
+
+      if (newName && newName !== displayName) {
+        // Store the mapping
+        locationNameMap[originalKey] = newName;
+      } else if (!newName) {
+        // If empty, revert to display name
+        this.value = displayName;
+      }
+    });
+
+    nameInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        this.blur();
+      }
+      if (e.key === "Escape") {
+        this.value = displayName;
+        this.blur();
+      }
+    });
+
+    item.appendChild(pickerContainer);
+    item.appendChild(nameInput);
+    elements.canvasLegendLocations.appendChild(item);
+
+    // Create Pickr instance for this location (after element is in DOM)
+    setTimeout(() => {
+      const pickr = Pickr.create({
+        el: `#canvas-location-picker-${index}`,
+        theme: "monolith",
+        position: "bottom-start",
+        default: customColors.locations[location] || "#999",
+        defaultRepresentation: "HEXA",
+        components: {
+          preview: true,
+          opacity: true,
+          hue: true,
+          interaction: {
+            hex: true,
+            rgba: true,
+            input: true,
+            save: false,
+          },
+        },
+      });
+
+      pickr.on("change", (color) => {
+        if (color) {
+          customColors.locations[location] = color.toRGBA().toString();
+          pickr.applyColor(true);
+          if (network) renderNetwork();
+        }
+      });
+
+      // Initialize with current color
+      pickr.setColor(customColors.locations[location], true);
+    }, 10);
+  });
+}
+
+function renameLocation(oldName, newName) {
+  // Update color mapping
+  if (customColors.locations[oldName]) {
+    customColors.locations[newName] = customColors.locations[oldName];
+    delete customColors.locations[oldName];
+  }
+
+  // Update geoData
+  if (geoData) {
+    if (geoData.location01) {
+      const idx01 = geoData.location01.indexOf(oldName);
+      if (idx01 !== -1) geoData.location01[idx01] = newName;
+    }
+    if (geoData.location02) {
+      const idx02 = geoData.location02.indexOf(oldName);
+      if (idx02 !== -1) geoData.location02[idx02] = newName;
+    }
+  }
+
+  // Update samples in network nodes
+  if (network) {
+    network.nodes.forEach((node) => {
+      if (node.samples) {
+        node.samples.forEach((sample) => {
+          if (sample.location === oldName) {
+            sample.location = newName;
+          }
+        });
+      }
+    });
+  }
+
+  // Refresh displays
+  updateCanvasLegend();
+  renderNetwork();
 }
 
 // ===== Canvas Interactions =====
@@ -2457,68 +2671,85 @@ function exportPNG() {
     return;
   }
 
-  // Calcular bounds da rede inteira
+  const exportData = prepareNetworkExportData();
+  renderNetworkToPNG(exportData);
+}
+
+// Prepara todos os dados necessários para exportação
+function prepareNetworkExportData() {
+  // Calcular bounds da rede
   let minX = Infinity,
     minY = Infinity,
     maxX = -Infinity,
     maxY = -Infinity;
 
   network.nodes.forEach((node) => {
-    const margin = node.size + 30; // Margem extra para bordas e labels
+    const margin = node.size + 30;
     minX = Math.min(minX, node.x - margin);
     minY = Math.min(minY, node.y - margin);
     maxX = Math.max(maxX, node.x + margin);
     maxY = Math.max(maxY, node.y + margin);
   });
 
-  const padding = 50; // Padding ao redor da rede
+  const padding = 50;
   const width = maxX - minX + padding * 2;
   const height = maxY - minY + padding * 2;
+  const offsetX = -minX + padding;
+  const offsetY = -minY + padding;
 
-  // Criar canvas temporário com tamanho da rede completa
+  return {
+    width,
+    height,
+    padding,
+    offsetX,
+    offsetY,
+    includeLegend:
+      elements.includeLegendOnExport && elements.includeLegendOnExport.checked,
+    showMutations: elements.showMutations.checked,
+    useTicks: elements.mutationToggle.classList.contains("ticks"),
+  };
+}
+
+// Renderiza a rede para PNG
+function renderNetworkToPNG(exportData) {
   const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = width;
-  tempCanvas.height = height;
-  const tempCtx = tempCanvas.getContext("2d", { willReadFrequently: true });
+  tempCanvas.width = exportData.width;
+  tempCanvas.height = exportData.height;
+  const ctx = tempCanvas.getContext("2d", { willReadFrequently: true });
 
-  // Aplicar background
-  tempCtx.clearRect(0, 0, width, height);
-  tempCtx.fillStyle = customColors.background;
-  tempCtx.fillRect(0, 0, width, height);
+  // Background
+  ctx.fillStyle = customColors.background;
+  ctx.fillRect(0, 0, exportData.width, exportData.height);
 
-  // Transladar para centralizar a rede
-  tempCtx.save();
-  tempCtx.translate(-minX + padding, -minY + padding);
+  ctx.save();
+  ctx.translate(exportData.offsetX, exportData.offsetY);
 
   // Desenhar edges
   network.edges.forEach((edge) => {
     const source = network.nodes.find((n) => n.id === edge.source);
     const target = network.nodes.find((n) => n.id === edge.target);
-
     if (!source || !target) return;
 
-    tempCtx.beginPath();
-    tempCtx.moveTo(source.x, source.y);
-    tempCtx.lineTo(target.x, target.y);
-    tempCtx.strokeStyle = customColors.edge;
-    tempCtx.lineWidth = 2;
-    tempCtx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(source.x, source.y);
+    ctx.lineTo(target.x, target.y);
+    ctx.strokeStyle = customColors.edge;
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
-    // Mutation count or ticks
-    if (elements.showMutations.checked && edge.distance > 0) {
+    // Mutations
+    if (exportData.showMutations && edge.distance > 0) {
       const midX = (source.x + target.x) / 2;
       const midY = (source.y + target.y) / 2;
 
-      if (elements.mutationToggle.classList.contains("ticks")) {
-        // Draw ticks perpendicular to edge
-        drawMutationTicks(tempCtx, source, target, edge.distance);
+      if (exportData.useTicks) {
+        drawMutationTicks(ctx, source, target, edge.distance);
       } else {
-        // Draw number
-        tempCtx.fillStyle = customColors.mutation;
-        tempCtx.font = "12px Inter";
-        tempCtx.textAlign = "center";
-        tempCtx.textBaseline = "middle";
-        tempCtx.fillText(edge.distance.toString(), midX, midY);
+        ctx.fillStyle = customColors.mutation;
+        ctx.font = "12px Inter";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(edge.distance.toString(), midX, midY);
       }
     }
   });
@@ -2528,74 +2759,63 @@ function exportPNG() {
     const locationData = getNodeLocationData(node);
 
     if (locationData.multipleLocations) {
-      drawPieChartNode(tempCtx, node, locationData, false);
+      drawPieChartNode(ctx, node, locationData, false);
     } else {
       const color = getNodeColor(node);
-
-      tempCtx.beginPath();
-      tempCtx.arc(node.x, node.y, node.size, 0, 2 * Math.PI);
-      tempCtx.fillStyle = color;
-      tempCtx.fill();
-
-      if (node.isMedian) {
-        tempCtx.strokeStyle = "#0f172a";
-        tempCtx.lineWidth = 2;
-      } else {
-        tempCtx.strokeStyle = "#1e293b";
-        tempCtx.lineWidth = 2;
-      }
-      tempCtx.stroke();
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, node.size, 0, 2 * Math.PI);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = node.isMedian ? "#0f172a" : "#1e293b";
+      ctx.lineWidth = 2;
+      ctx.stroke();
     }
 
-    // Desenhar label do haplótipo dentro do nó
+    // Label do nó
     if (!node.isMedian && node.label) {
-      tempCtx.fillStyle = node.count > 5 ? "#ffffff" : "#0f172a";
-      tempCtx.font = "bold 14px Inter";
-      tempCtx.textAlign = "center";
-      tempCtx.textBaseline = "middle";
-      tempCtx.fillText(node.label, node.x, node.y);
+      ctx.fillStyle = node.count > 5 ? "#ffffff" : "#0f172a";
+      ctx.font = "bold 14px Inter";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(node.label, node.x, node.y);
     }
   });
 
-  tempCtx.restore();
+  ctx.restore();
 
-  // Converter para blob e forçar download
+  // Legenda
+  if (exportData.includeLegend) {
+    drawCanvasLegendOnExport(ctx, exportData.padding, exportData.padding);
+  }
+
+  // Download
   tempCanvas.toBlob((blob) => {
-    // Usar showSaveFilePicker se disponível (API moderna)
     if (window.showSaveFilePicker) {
       const options = {
         suggestedName: "haplotype_network.png",
         types: [
-          {
-            description: "PNG Image",
-            accept: { "image/png": [".png"] },
-          },
+          { description: "PNG Image", accept: { "image/png": [".png"] } },
         ],
       };
-
       window
         .showSaveFilePicker(options)
-        .then((handle) => {
-          handle.createWritable().then((writable) => {
-            writable.write(blob);
-            writable.close();
-            showToast("Rede completa exportada como PNG!");
-          });
+        .then((handle) => handle.createWritable())
+        .then((writable) => {
+          writable.write(blob);
+          writable.close();
+          showToast("Rede exportada como PNG!");
         })
         .catch((err) => {
-          if (err.name !== "AbortError") {
-            console.error("Erro ao salvar:", err);
-            // Fallback para método antigo
+          if (err.name !== "AbortError")
             downloadBlobFallback(blob, "haplotype_network.png");
-          }
         });
     } else {
-      // Fallback para navegadores antigos
       downloadBlobFallback(blob, "haplotype_network.png");
     }
   });
 }
 
+// Renderiza a rede para SVG
 function downloadBlobFallback(blob, filename) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -2615,200 +2835,146 @@ function downloadBlobFallback(blob, filename) {
   showToast("Rede completa exportada como PNG!");
 }
 
-function exportSVG() {
-  if (!network) {
-    showError("Nenhuma rede para exportar");
-    return;
-  }
+function drawCanvasLegendOnExport(ctx, x, y) {
+  if (!network || !geoData || !selectedLocation) return;
 
-  // Calcular bounds da rede inteira
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
+  const locationList =
+    selectedLocation === "location01" ? geoData.location01 : geoData.location02;
 
-  network.nodes.forEach((node) => {
-    const margin = node.size + 30; // Margem extra para labels
-    minX = Math.min(minX, node.x - margin);
-    minY = Math.min(minY, node.y - margin);
-    maxX = Math.max(maxX, node.x + margin);
-    maxY = Math.max(maxY, node.y + margin);
+  if (locationList.length === 0) return;
+
+  // Calculate text color based on background
+  const textColor = getContrastTextColor(customColors.background);
+
+  const panelPadding = 16;
+  const panelWidth = 220;
+
+  // Calcular altura total
+  const headerHeight = 14 + 12; // font + margin
+  const circlesHeight = 60; // espaço para as bolas maiores
+  const labelHeight = 16; // "Nº de sequências"
+  const separatorHeight = 16; // espaço do separador
+  const itemHeight = 24; // altura de cada item de bioma
+
+  const totalHeight =
+    panelPadding * 2 + // top + bottom padding
+    headerHeight +
+    circlesHeight +
+    labelHeight +
+    separatorHeight +
+    locationList.length * itemHeight;
+
+  // Draw panel background
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+  ctx.fillRect(x, y, panelWidth, totalHeight);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, panelWidth, totalHeight);
+
+  let currentY = y + panelPadding;
+
+  // Header "LEGENDA"
+  ctx.fillStyle = textColor;
+  ctx.font = "bold 14px Inter";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText("LEGENDA", x + panelWidth / 2, currentY);
+  currentY += headerHeight;
+
+  // Draw proportion circles - LADO A LADO
+  const circle1Size = 25;
+  const circle2Size = 55;
+  const gapBetweenCircles = 8;
+
+  // Calcular posição X inicial para centralizar as duas bolas
+  const totalCirclesWidth = circle1Size + gapBetweenCircles + circle2Size;
+  let circleStartX = x + (panelWidth - totalCirclesWidth) / 2;
+  const circleY = currentY + circle2Size / 2; // usar a bola maior como referência
+
+  // Bola 1 (pequena)
+  ctx.beginPath();
+  ctx.arc(
+    circleStartX + circle1Size / 2,
+    circleY,
+    circle1Size / 2,
+    0,
+    2 * Math.PI
+  );
+  ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = textColor;
+  ctx.font = "bold 10px Inter";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("1", circleStartX + circle1Size / 2, circleY);
+
+  // Bola 2 (grande)
+  circleStartX += circle1Size + gapBetweenCircles;
+  ctx.beginPath();
+  ctx.arc(
+    circleStartX + circle2Size / 2,
+    circleY,
+    circle2Size / 2,
+    0,
+    2 * Math.PI
+  );
+  ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = textColor;
+  ctx.font = "bold 12px Inter";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("10", circleStartX + circle2Size / 2, circleY);
+
+  currentY += circlesHeight;
+
+  // Label "Nº de sequências"
+  ctx.fillStyle = textColor;
+  ctx.font = "11px Inter";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText("Nº de sequências", x + panelWidth / 2, currentY);
+  currentY += labelHeight;
+
+  // Separator line
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x + panelPadding, currentY);
+  ctx.lineTo(x + panelWidth - panelPadding, currentY);
+  ctx.stroke();
+  currentY += separatorHeight;
+
+  // Draw location items
+  locationList.forEach((location) => {
+    const color = customColors.locations[location] || "#999";
+    const displayName = locationNameMap[location] || location;
+
+    // Color box
+    ctx.fillStyle = color;
+    ctx.fillRect(x + panelPadding + 4, currentY, 16, 16);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + panelPadding + 4, currentY, 16, 16);
+
+    // Location name
+    ctx.fillStyle = textColor;
+    ctx.font = "13px Inter";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(displayName, x + panelPadding + 4 + 16 + 8, currentY);
+
+    currentY += itemHeight;
   });
 
-  const padding = 50;
-  const width = maxX - minX + padding * 2;
-  const height = maxY - minY + padding * 2;
-  const offsetX = -minX + padding;
-  const offsetY = -minY + padding;
-
-  // Criar SVG
-  let svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-  <defs>
-    <style>
-      text { font-family: Inter, Arial, sans-serif; font-size: 12px; }
-    </style>
-  </defs>
-  
-  <!-- Background -->
-  <rect width="${width}" height="${height}" fill="${customColors.background}"/>
-  
-  <g transform="translate(${offsetX}, ${offsetY})">
-`;
-
-  // Desenhar edges
-  network.edges.forEach((edge) => {
-    const source = network.nodes.find((n) => n.id === edge.source);
-    const target = network.nodes.find((n) => n.id === edge.target);
-
-    if (!source || !target) return;
-
-    svg += `    <line x1="${source.x}" y1="${source.y}" x2="${target.x}" y2="${target.y}" 
-          stroke="${customColors.edge}" stroke-width="2"/>\n`;
-
-    // Mutation count or ticks
-    if (elements.showMutations.checked && edge.distance > 0) {
-      const midX = (source.x + target.x) / 2;
-      const midY = (source.y + target.y) / 2;
-
-      if (elements.mutationToggle.classList.contains("ticks")) {
-        // Draw ticks perpendicular to edge
-        const dx = target.x - source.x;
-        const dy = target.y - source.y;
-        const length = Math.sqrt(dx * dx + dy * dy);
-
-        const perpX = -dy / length;
-        const perpY = dx / length;
-
-        const tickLength = 8;
-        const tickSpacing = 5;
-
-        for (let i = 0; i < edge.distance; i++) {
-          const offset = (i - (edge.distance - 1) / 2) * tickSpacing;
-          const tickCenterX = midX + (dx / length) * offset;
-          const tickCenterY = midY + (dy / length) * offset;
-
-          const x1 = tickCenterX - perpX * (tickLength / 2);
-          const y1 = tickCenterY - perpY * (tickLength / 2);
-          const x2 = tickCenterX + perpX * (tickLength / 2);
-          const y2 = tickCenterY + perpY * (tickLength / 2);
-
-          svg += `    <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" 
-                stroke="${customColors.mutation}" stroke-width="1.5"/>\n`;
-        }
-      } else {
-        // Draw number
-        svg += `    <text x="${midX}" y="${midY}" text-anchor="middle" dominant-baseline="middle" 
-              fill="${customColors.mutation}">${edge.distance}</text>\n`;
-      }
-    }
-  });
-
-  // Desenhar nodes
-  network.nodes.forEach((node) => {
-    const locationData = getNodeLocationData(node);
-
-    if (locationData.multipleLocations) {
-      // Pie chart para múltiplas localidades
-      const { locations, total } = locationData;
-      const locationList =
-        selectedLocation === "location01"
-          ? geoData.location01
-          : geoData.location02;
-      const sortedLocations = Object.entries(locations).sort(
-        (a, b) => b[1] - a[1]
-      );
-
-      let startAngle = -Math.PI / 2;
-
-      sortedLocations.forEach(([location, count]) => {
-        const proportion = count / total;
-        const endAngle = startAngle + proportion * 2 * Math.PI;
-
-        let color = customColors.locations[location];
-        if (!color) {
-          const locationIndex = locationList.indexOf(location);
-          const defaultColors = [
-            "rgba(99, 102, 241, 1)",
-            "rgba(139, 92, 246, 1)",
-            "rgba(236, 72, 153, 1)",
-            "rgba(244, 63, 94, 1)",
-            "rgba(245, 158, 11, 1)",
-            "rgba(16, 185, 129, 1)",
-            "rgba(20, 184, 166, 1)",
-            "rgba(6, 182, 212, 1)",
-            "rgba(59, 130, 246, 1)",
-          ];
-          color =
-            locationIndex >= 0
-              ? defaultColors[locationIndex % defaultColors.length]
-              : "rgba(99, 102, 241, 1)";
-        }
-
-        // Converter ângulos para coordenadas
-        const x1 = node.x + node.size * Math.cos(startAngle);
-        const y1 = node.y + node.size * Math.sin(startAngle);
-        const x2 = node.x + node.size * Math.cos(endAngle);
-        const y2 = node.y + node.size * Math.sin(endAngle);
-        const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
-
-        svg += `    <path d="M ${node.x} ${node.y} L ${x1} ${y1} A ${node.size} ${node.size} 0 ${largeArc} 1 ${x2} ${y2} Z" 
-              fill="${color}"/>\n`;
-
-        startAngle = endAngle;
-      });
-    } else {
-      // Nó sólido
-      const color = getNodeColor(node);
-      const strokeColor = node.isMedian ? "#0f172a" : "#1e293b";
-
-      svg += `    <circle cx="${node.x}" cy="${node.y}" r="${node.size}" 
-            fill="${color}" stroke="${strokeColor}" stroke-width="2"/>\n`;
-    }
-
-    // Desenhar label do haplótipo dentro do nó (somente para nós não-medianos)
-    if (!node.isMedian && node.label) {
-      const fillColor = node.count > 5 ? "#ffffff" : "#0f172a";
-      svg += `    <text x="${node.x}" y="${node.y}" text-anchor="middle" dominant-baseline="middle" font-weight="bold" font-size="14" fill="${fillColor}">${node.label}</text>\n`;
-    }
-  });
-
-  svg += `  </g>
-</svg>`;
-
-  // Criar blob e download
-  const blob = new Blob([svg], { type: "image/svg+xml" });
-
-  // Usar showSaveFilePicker se disponível
-  if (window.showSaveFilePicker) {
-    const options = {
-      suggestedName: "haplotype_network.svg",
-      types: [
-        {
-          description: "SVG Image",
-          accept: { "image/svg+xml": [".svg"] },
-        },
-      ],
-    };
-
-    window
-      .showSaveFilePicker(options)
-      .then((handle) => {
-        handle.createWritable().then((writable) => {
-          writable.write(blob);
-          writable.close();
-          showToast("Rede completa exportada como SVG!");
-        });
-      })
-      .catch((err) => {
-        if (err.name !== "AbortError") {
-          console.error("Erro ao salvar:", err);
-          downloadBlobFallback(blob, "haplotype_network.svg");
-        }
-      });
-  } else {
-    downloadBlobFallback(blob, "haplotype_network.svg");
-  }
+  ctx.restore();
 }
 
 // ===== Utility Functions =====

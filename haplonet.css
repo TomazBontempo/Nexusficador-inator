@@ -124,7 +124,7 @@ body {
 
 /* ===== Sections ===== */
 .section {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .upload-card,
@@ -484,6 +484,7 @@ h2 {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
+  margin-top: 10px;
   gap: 2rem;
 }
 
@@ -495,15 +496,12 @@ h2 {
   display: flex;
   gap: 1.5rem;
   align-items: center;
-  margin-top: 5px;
-  margin-left: 10px;
 }
 
 .network-toggles {
   display: flex;
   gap: 1rem;
   align-items: center;
-  margin-top: 10px;
 }
 
 .stat-inline {
@@ -532,7 +530,7 @@ h2 {
 .canvas-container {
   position: relative;
   width: 100%;
-  height: 600px;
+  height: 750px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -614,33 +612,6 @@ h2 {
 }
 
 /* ===== Legend ===== */
-.legend {
-  padding: 1rem;
-  background: var(--bg-input);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-}
-
-.legend-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.legend h3 {
-  font-size: 1rem;
-  margin: 0;
-  color: var(--text-primary);
-}
-
-.legend-actions {
-  margin-top: 1.5rem;
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
 .legend-global-colors {
   display: flex;
   gap: 0.75rem;
@@ -708,27 +679,6 @@ h2 {
 
 .hidden-color-input {
   display: none;
-}
-
-.color-bubble {
-  display: none;
-}
-
-.legend-opacity-control {
-  display: none;
-}
-
-#legendContent {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 5px;
 }
 
 /* ===== Tooltip ===== */
@@ -896,6 +846,192 @@ h2 {
   bottom: 10px;
   right: 10px;
   z-index: 100;
+}
+
+/* ===== Canvas Legend Panel ===== */
+.canvas-legend-panel {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius);
+  padding: 1rem;
+  min-width: 200px;
+  width: auto;
+
+  max-height: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  transition: var(--transition);
+  --legend-text-color: #ffffff;
+}
+
+.canvas-legend-panel:hover {
+  border-color: rgba(255, 193, 7, 0.5);
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2), 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.canvas-legend-header {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--legend-text-color);
+  margin-bottom: 0.75rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.canvas-legend-proportion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.proportion-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--legend-text-color);
+  flex-shrink: 0;
+}
+
+.proportion-label {
+  font-size: 0.75rem;
+  color: var(--legend-text-color);
+  line-height: 1.3;
+}
+
+.canvas-legend-locations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 320px;
+  padding: 4px 0.5rem 4px 4px;
+  width: 100%;
+}
+
+.canvas-legend-locations::-webkit-scrollbar {
+  width: 6px;
+}
+
+.canvas-legend-locations::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.canvas-legend-locations::-webkit-scrollbar-thumb {
+  background: rgba(255, 193, 7, 0.6);
+  border-radius: 3px;
+}
+
+.canvas-legend-locations::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 193, 7, 0.8);
+}
+
+.canvas-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: var(--transition);
+  padding: 2px 0;
+}
+
+/* Pickr button in canvas legend */
+.canvas-legend-item .location-color-picker {
+  flex-shrink: 0;
+  margin: 2px;
+}
+
+.canvas-legend-item .pcr-button {
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 4px !important;
+  border: 2px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.2s ease !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.canvas-legend-item .pcr-button:hover {
+  transform: scale(1.15) !important;
+  border-color: rgba(255, 193, 7, 0.8) !important;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3), 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+.canvas-legend-item .pcr-button::before,
+.canvas-legend-item .pcr-button::after {
+  box-shadow: none !important;
+}
+
+.canvas-legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.canvas-legend-color:hover {
+  transform: scale(1.2);
+  border-color: rgba(255, 193, 7, 0.8);
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.3);
+}
+
+.canvas-legend-item:hover .canvas-legend-color {
+  transform: scale(1.15);
+  border-color: rgba(255, 193, 7, 0.8);
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.3);
+}
+
+.canvas-legend-name {
+  font-size: 0.8rem;
+  color: var(--legend-text-color);
+  cursor: text;
+  flex: 1;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  transition: var(--transition);
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: inherit;
+  outline: none;
+}
+
+.canvas-legend-name:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.canvas-legend-name:focus {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+  color: var(--primary-color);
 }
 
 .tip-icon {
