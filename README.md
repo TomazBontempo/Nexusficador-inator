@@ -131,6 +131,141 @@ flowchart TD
 
 ---
 
+## 🕸️ Módulo de Redes de Haplótipos - Haplonet-Inator™️
+
+### Visão Geral
+
+O **Haplonet-Inator™️** é um módulo integrado que gera e visualiza **redes de haplótipos** (haplotype networks) diretamente no navegador usando o algoritmo **Median-Joining Network (MJN)** de Bandelt, Forster & Röhl (1999).
+
+### Funcionalidades Principais
+
+#### 🎨 Visualização Interativa
+
+- **Canvas HTML5**: Renderização de alta performance com zoom, pan e arrastar nós
+- **Cores Customizáveis**: Sistema completo de personalização de cores usando Pickr color picker
+  - Cores por localidade geográfica
+  - Cor de fundo do canvas
+  - Cor das arestas (edges)
+  - Cor dos vetores medianos
+  - Cor das mutações/ticks
+- **Atualização em Tempo Real**: Todas as alterações de cores refletem instantaneamente na rede
+
+#### 🧬 Algoritmo Median-Joining Network (MJN)
+
+- **Implementação Completa**: Baseado em Bandelt, Forster & Röhl (1999)
+- **Quasi-Medians**: Geração automática de vetores medianos (median vectors) não observados
+- **Refinamento Iterativo**: Máximo de 20 iterações para otimização da rede
+- **Limpeza Automática**: Remove vértices obsoletos (grau < 2, não amostrados)
+
+#### 📊 Layout e Física
+
+- **Force-Directed Layout**: Algoritmo de Tunkelang para posicionamento automático dos nós
+- **Forças Implementadas**:
+  - Repulsão entre nós (evita sobreposição)
+  - Atração por arestas (mantém nós conectados juntos)
+  - Forças de borda (mantém rede dentro dos limites)
+- **Convergência Inteligente**: Para automaticamente quando a rede estabiliza
+- **Reset de Layout**: Restaura posição original dos nós
+
+#### 🎯 Representação Visual
+
+- **Nós de Haplótipos**:
+  - Tamanho proporcional ao número de amostras (√count)
+  - Label interno com identificador (H1, H2, H3...)
+  - Cor sólida para localidade única
+  - Gráfico de pizza (pie chart) para múltiplas localidades
+- **Vetores Medianos**:
+  - Nós pequenos vazios (6px)
+  - Representam haplótipos inferidos (não observados)
+  - Conectam haplótipos distantes
+- **Arestas**:
+  - Espessura 2px
+  - Exibição opcional de mutações (número ou ticks perpendiculares)
+- **Tooltips Interativos**:
+  - Mostram amostras, contagem e distribuição geográfica
+  - Aparecem ao passar o mouse sobre os nós
+
+#### 🎨 Sistema de Cores
+
+- **Pickr Color Picker**: Biblioteca moderna com tema Monolith
+- **Cores Default**:
+  - Background: Transparente (rgba(255,255,255,0))
+  - Edges: Cinza escuro (#1e293b)
+  - Median vectors: Cinza médio (#64748b)
+  - Mutations: Laranja (#f97316)
+  - Localidades: Paleta de 9 cores vibrantes
+- **Persistência**: Cores customizadas mantidas durante a sessão
+
+#### 📤 Exportação
+
+- **PNG Export**: Exporta a rede completa em alta resolução
+  - Calcula bounds automáticos
+  - Padding de 50px
+  - API moderna showSaveFilePicker com fallback
+- **SVG Export**: Exporta como vetor escalável
+  - Texto renderizado corretamente
+  - Suporte a gráficos de pizza
+  - Ideal para publicações científicas
+
+#### 🖱️ Interação
+
+- **Arrastar Nós**: Clique e arraste qualquer nó para reposicioná-lo
+- **Pan**: Clique e arraste no canvas vazio para mover a visualização
+- **Zoom**: Scroll do mouse para aumentar/diminuir (0.1x - 5x)
+- **Hover**: Passe o mouse sobre nós para ver detalhes
+
+#### 📋 Estatísticas
+
+- **Contadores Automáticos**:
+  - Número de nós (haplótipos observados + medianos)
+  - Número de arestas (conexões)
+  - Número de componentes (subgrafos desconectados)
+
+### Formatos de Entrada Suportados
+
+- **FASTA** (.fas, .fasta, .fa, .txt)
+  - Formato padrão de sequências
+  - Nomes devem seguir padrão: `Nome-Localidade` ou `Nome-Loc1-Loc2`
+
+### Tecnologias do Haplonet-Inator™️
+
+| Tecnologia           | Função                                  |
+| -------------------- | --------------------------------------- |
+| Canvas 2D API        | Renderização de alta performance        |
+| Pickr v1.8.x         | Color picker avançado com tema monolith |
+| Force-Directed Graph | Layout automático (Tunkelang)           |
+| Median-Joining Net   | Algoritmo de rede de haplótipos (MJN)   |
+| File Picker API      | Salvar arquivos com diálogo nativo      |
+| Blob API             | Geração de PNG/SVG                      |
+| ResizeObserver       | Canvas responsivo                       |
+
+### Fluxo do Haplonet-Inator™️
+
+```mermaid
+flowchart TD
+    A[Upload FASTA] --> B[Parse & Identificar Haplótipos]
+    B --> C[Gerar MJN com Quasi-Medians]
+    C --> D[Aplicar Force-Directed Layout]
+    D --> E[Renderizar no Canvas]
+    E --> F[Interação: Zoom/Pan/Drag]
+    F --> G{Customizar Cores?}
+    G -->|Sim| H[Atualizar Pickr Instances]
+    H --> E
+    G -->|Não| I{Exportar?}
+    I -->|PNG| J[Export PNG]
+    I -->|SVG| K[Export SVG]
+    I -->|Não| F
+```
+
+### Considerações Científicas
+
+- **Precisão Algorítmica**: Implementação fiel ao paper original do MJN
+- **Performance**: Otimizado para datasets de até 100 haplótipos
+- **Ambiguidades**: Posições com N ou - são excluídas automaticamente
+- **Publicação**: Exportação em SVG permite edição vetorial para papers
+
+---
+
 ## 🤖 Considerações Finais do Dr. Doofenshmirtz
 
 - O Nexusficadorinator-inator™️ foi projetado para ser à prova de agentes secretos e cientistas distraídos.
