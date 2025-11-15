@@ -1588,12 +1588,20 @@ function doRender() {
         // Draw ticks perpendicular to edge
         drawMutationTicks(ctx, source, target, edge.distance);
       } else {
-        // Draw number
+        // Draw number perpendicular to edge
+        const dx = target.x - source.x;
+        const dy = target.y - source.y;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const perpX = -dy / length;
+        const perpY = dx / length;
+        const offset = 12; // px
+        const labelX = midX + perpX * offset;
+        const labelY = midY + perpY * offset;
         ctx.fillStyle = customColors.mutation;
         ctx.font = "12px Inter";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(edge.distance.toString(), midX, midY);
+        ctx.fillText(edge.distance.toString(), labelX, labelY);
       }
     }
   });
@@ -2745,11 +2753,20 @@ function renderNetworkToPNG(exportData) {
       if (exportData.useTicks) {
         drawMutationTicks(ctx, source, target, edge.distance);
       } else {
+        // Draw number perpendicular to edge
+        const dx = target.x - source.x;
+        const dy = target.y - source.y;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const perpX = -dy / length;
+        const perpY = dx / length;
+        const offset = 12; // px
+        const labelX = midX + perpX * offset;
+        const labelY = midY + perpY * offset;
         ctx.fillStyle = customColors.mutation;
         ctx.font = "12px Inter";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(edge.distance.toString(), midX, midY);
+        ctx.fillText(edge.distance.toString(), labelX, labelY);
       }
     }
   });
