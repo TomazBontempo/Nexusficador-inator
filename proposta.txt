@@ -1,0 +1,231 @@
+## 1. Problema: por que a Haplonet parece ter “mais passos de mutação”?
+
+Os usuários têm a sensação de que a rede da Haplonet tem **mais mutações e mais complexidade** que a rede gerada no PopArt, mesmo usando o mesmo algoritmo (Median-Joining Network – MJN).
+
+Os principais motivos visuais são:
+
+1. **Mais quebras nos ramos**
+
+   * Na Haplonet, os caminhos entre nós têm mais “dobrinhas”, com vários segmentos em zigue-zague.
+   * No PopArt, esses mesmos caminhos aparecem mais “esticados”, com menos mudanças de direção.
+     ➜ O número de mutações é o mesmo, mas a forma de desenhar (mais segmentos) passa a impressão de rede mais complexa.
+
+2. **Median vectors mais explícitos**
+
+   * A Haplonet mostra mais nós intermediários (median vectors) de forma separada.
+   * Isso aumenta o número de vértices e de segmentos, deixando a rede visualmente mais carregada.
+
+A solução não é mudar o algoritmo, mas **simplificar a representação gráfica** da mesma MJN.
+
+---
+
+## 2. Estratégia geral: deixar a Haplonet mais parecida com a PopArt
+
+Três ideias principais:
+
+### 2.1. “Comprimir” sequências de median vectors de grau 2
+
+Regra de pós-processamento do grafo:
+
+* Para cada nó mediano `M`:
+
+  * Se `M` tem **grau 2** (ligado apenas a `A` e `B`),
+  * e não é um haplótipo observado (`isMedian: true`),
+* Então:
+
+  * remover `M` do grafo,
+  * conectar `A` diretamente a `B`,
+  * definir `distance(A–B) = distance(A–M) + distance(M–B)`.
+
+Visualmente:
+
+* Antes: `A — MV1 — MV2 — B` (várias quebras).
+* Depois: uma única aresta `A–B` com `distance = 4`, por exemplo.
+
+A informação biológica (**quantas mutações existem entre A e B**) permanece idêntica, mas o número de nós e “cotovelos” cai bastante, deixando os clusters mais limpos.
+
+---
+
+### 2.2. Tratar reticulações como “secundárias”
+
+Nos trechos onde há **ciclos** (reticulações), o MJN gera múltiplos caminhos igualmente parcimoniosos:
+
+* É possível identificar esses ciclos e marcar **uma das arestas como secundária** (por exemplo, a de maior distância).
+* Visualmente, essas arestas secundárias podem ser desenhadas:
+
+  * com linha mais fina,
+  * em cinza claro,
+  * ou pontilhadas.
+
+Você ainda pode oferecer um botão para **ocultar/mostrar reticulações secundárias**, deixando visível um “esqueleto” de árvore principal quando o usuário quiser uma visão mais simples.
+
+*(Essa parte pode ficar para uma versão 2.0; a compressão de median vectors já traz um grande ganho.)*
+
+---
+
+### 2.3. Layout mais “suave” (força/energia)
+
+Aplicar um **layout por forças** (Fruchterman-Reingold, Kamada-Kawai etc.), com alguns nós “ancorados” (por exemplo, H1 no centro ou o maior nó como referência), tende a:
+
+* afastar clusters fortemente conectados,
+* reduzir cruzamento de arestas,
+* produzir algo visualmente mais próximo do PopArt.
+
+---
+
+## 3. Implementação: compressão de median vectors de grau 2
+
+### 3.1. Estrutura do grafo
+
+A rede é representada por:
+
+```js
+const network = {
+  nodes: [
+    {
+      id: "H1",
+      label: "H1",
+      index: 0,
+      size: 30,
+      count: 3,
+      samples: ["s1","s2"],
+      sequence: "ATCG...",
+      x: 0, y: 0,
+      vx: 0, vy: 0,
+      isMedian: false,
+      labelPosition: "center"
+    },
+    // ...
+  ],
+  edges: [
+    {
+      source: "H1",
+      target: "H2",
+      distance: 2 // número de mutações
+    },
+    // ...
+  ]
+};
+```
+
+O grafo é tratado como **não dirigido**.
+
+---
+
+### 3.2. Função utilitária: construir adjacência
+
+```js
+function buildAdjacency(nodes, edges) {
+  const adj = new Map();
+  for (const node of nodes) {
+    adj.set(node.id, new Set());
+  }
+  for (const e of edges) {
+    adj.get(e.source)?.add(e.target);
+    adj.get(e.target)?.add(e.source);
+  }
+  return adj;
+}
+```
+
+---
+
+### 3.3. Função principal: simplificar cadeias de median vectors
+
+**Importante:**
+
+* Trabalhar numa **cópia** do grafo, para permitir modos “detalhado” e “simplificado”.
+* Tratar o grafo como **não dirigido**.
+
+```js
+function simplifyMedianChains(originalNetwork) {
+  // Cópia rasa é suficiente aqui
+  const network = {
+    nodes: originalNetwork.nodes.map(n => ({ ...n })),
+    edges: originalNetwork.edges.map(e => ({ ...e }))
+  };
+
+  const nodeById = new Map(network.nodes.map(n => [n.id, n]));
+
+  function findEdge(edges, a, b) {
+    return edges.find(e =>
+      (e.source === a && e.target === b) ||
+      (e.source === b && e.target === a)
+    );
+  }
+
+  function rebuildAdjacency() {
+    return buildAdjacency(network.nodes, network.edges);
+  }
+
+  let changed = false;
+
+  do {
+    changed = false;
+    const adj = rebuildAdjacency();
+
+    // Percorremos uma cópia, pois vamos modificar network.nodes
+    for (const node of [...network.nodes]) {
+      if (!node.isMedian) continue;
+
+      const neighbors = Array.from(adj.get(node.id) || []);
+
+      // Só median vectors de grau 2
+      if (neighbors.length !== 2) continue;
+
+      const [aId, bId] = neighbors;
+      const e1 = findEdge(network.edges, node.id, aId);
+      const e2 = findEdge(network.edges, node.id, bId);
+
+      if (!e1 || !e2) continue; // segurança
+
+      const newDistance = (e1.distance || 1) + (e2.distance || 1);
+
+      // Remove o nó mediano
+      network.nodes = network.nodes.filter(n => n.id !== node.id);
+      nodeById.delete(node.id);
+
+      // Remove as arestas ligadas a esse nó
+      network.edges = network.edges.filter(e =>
+        e.source !== node.id && e.target !== node.id
+      );
+
+      // Verifica se já existe aresta direta A–B
+      const existing = findEdge(network.edges, aId, bId);
+      if (existing) {
+        // Evita explosão de arestas em ciclos (reticulações)
+        // Mantém a menor distância conhecida
+        existing.distance = Math.min(existing.distance, newDistance);
+      } else {
+        network.edges.push({
+          source: aId,
+          target: bId,
+          distance: newDistance
+        });
+      }
+
+      // Fizemos uma alteração; precisamos recalcular adjacência
+      changed = true;
+      break;
+    }
+  } while (changed);
+
+  return network;
+}
+```
+
+### 3.4. Uso típico
+
+```js
+// Modo “detalhado” (original do MJN)
+const networkDetailed = network;
+
+// Modo “simplificado” (para visualização)
+const networkSimplified = simplifyMedianChains(network);
+
+// Você escolhe qual passar para o renderer
+renderNetwork(networkSimplified);
+```
+
+Isso, por si só, já reduz significativamente a sensação de “mil linhas e quinas” da Haplonet, aproximando o visual do que o usuário está acostumado a ver no PopArt, sem alterar a informação biológica de distâncias entre haplótipos.
+
