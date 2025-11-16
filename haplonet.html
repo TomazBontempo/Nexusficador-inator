@@ -136,6 +136,80 @@
               <div id="locationSelection"></div>
             </div>
 
+            <!-- Algorithm Configuration -->
+            <div class="algorithm-config">
+              <h3
+                style="
+                  margin-top: 1.5rem;
+                  margin-bottom: 0.75rem;
+                  font-size: 1.1rem;
+                  display: flex;
+                  align-items: center;
+                  gap: 0.5rem;
+                "
+              >
+                <ion-icon name="settings-outline"></ion-icon>
+                Configurações do Algoritmo
+              </h3>
+
+              <div class="config-item">
+                <label for="epsilonSlider">
+                  Epsilon (tolerância para medians)
+                  <span
+                    class="config-tooltip"
+                    title="Valor de tolerância para aceitar novos haplótipos medianos. Valores menores = rede mais simples e similar ao PopART."
+                    >ⓘ</span
+                  >
+                </label>
+                <div style="display: flex; align-items: center; gap: 1rem">
+                  <input
+                    type="range"
+                    id="epsilonSlider"
+                    min="0"
+                    max="3"
+                    step="1"
+                    value="0"
+                    style="flex: 1"
+                  />
+                  <span
+                    id="epsilonValue"
+                    style="
+                      min-width: 2rem;
+                      text-align: center;
+                      font-weight: 600;
+                    "
+                    >0</span
+                  >
+                </div>
+              </div>
+
+              <div class="config-item">
+                <label for="simplificationLevel">
+                  Nível de simplificação
+                  <span
+                    class="config-tooltip"
+                    title="Controla a agressividade na remoção de nós medianos redundantes. 'Conservador' mantém mais medianos (similar ao PopART)."
+                    >ⓘ</span
+                  >
+                </label>
+                <select
+                  id="simplificationLevel"
+                  style="
+                    width: 100%;
+                    padding: 0.5rem;
+                    border-radius: 6px;
+                    border: 1px solid var(--border);
+                  "
+                >
+                  <option value="conservative">
+                    Conservador (recomendado)
+                  </option>
+                  <option value="moderate">Moderado</option>
+                  <option value="aggressive">Agressivo</option>
+                </select>
+              </div>
+            </div>
+
             <button class="btn-primary btn-large" id="generateNetworkBtn">
               <ion-icon name="git-network"></ion-icon>
               Gerar Rede de Haplótipos

@@ -114,6 +114,12 @@ let pickrInstances = {
 // ===== DOM Elements =====
 let elements = {};
 
+// Algorithm configuration
+let algorithmConfig = {
+  epsilon: 0,
+  simplificationLevel: "conservative",
+};
+
 // ===== Initialize =====
 function init() {
   // Initialize DOM elements
@@ -163,6 +169,9 @@ function init() {
     canvasLegendPanel: document.getElementById("canvasLegendPanel"),
     canvasLegendProportion: document.getElementById("canvasLegendProportion"),
     canvasLegendLocations: document.getElementById("canvasLegendLocations"),
+    epsilonSlider: document.getElementById("epsilonSlider"),
+    epsilonValue: document.getElementById("epsilonValue"),
+    simplificationLevel: document.getElementById("simplificationLevel"),
   };
 
   canvas = elements.networkCanvas;
@@ -299,6 +308,21 @@ function setupEventListeners() {
 
   // Resize
   window.addEventListener("resize", resizeCanvas);
+
+  // Algorithm configuration sliders
+  if (elements.epsilonSlider && elements.epsilonValue) {
+    elements.epsilonSlider.addEventListener("input", (e) => {
+      const value = parseInt(e.target.value);
+      algorithmConfig.epsilon = value;
+      elements.epsilonValue.textContent = value;
+    });
+  }
+
+  if (elements.simplificationLevel) {
+    elements.simplificationLevel.addEventListener("change", (e) => {
+      algorithmConfig.simplificationLevel = e.target.value;
+    });
+  }
 }
 
 // ===== File Handling =====
@@ -668,14 +692,16 @@ function generateNetwork() {
 
   setTimeout(() => {
     try {
-      const epsilon = 0; // Can be made configurable later
+      const epsilon = algorithmConfig.epsilon; // Use configured epsilon
 
       console.log("🔷 Generating Median-Joining Network");
       console.log(
         "Haplotypes:",
         parsedData.haplotypes.length,
         "Epsilon:",
-        epsilon
+        epsilon,
+        "Simplification:",
+        algorithmConfig.simplificationLevel
       );
 
       network = buildNetwork(parsedData.haplotypes, epsilon);
@@ -904,6 +930,27 @@ function buildMedianJoiningNetwork(initialNodes, epsilon = 0) {
   console.log(`Final edges after simplification: ${finalEdges.length}`);
   console.log(`Final nodes: ${nodes.length}`);
 
+  // Final cleanup: Remove any remaining isolated or degree-1 median nodes
+  // This can happen after simplification creates new connections
+  let cleanupIterations = 0;
+  let removedInCleanup = 0;
+  const MAX_CLEANUP_ITERATIONS = 10;
+
+  while (cleanupIterations < MAX_CLEANUP_ITERATIONS) {
+    const removed = removeObsoleteVertices(nodes, finalEdges);
+    if (removed === 0) break;
+
+    removedInCleanup += removed;
+    cleanupIterations++;
+  }
+
+  if (removedInCleanup > 0) {
+    console.log(
+      `\n🧹 Final cleanup: removed ${removedInCleanup} isolated/degree-1 median nodes`
+    );
+    console.log(`Final nodes after cleanup: ${nodes.length}`);
+  }
+
   return { nodes, edges: finalEdges };
 }
 
@@ -927,13 +974,25 @@ function applyMaximumParsimonyFilter(nodes, edges) {
 
   console.log(`  Additional edges to evaluate: ${additionalEdges.length}`);
 
-  // Keep only additional edges that have distance = 1 (direct single mutation)
-  // This removes long-distance "shortcut" edges that make the network look complex
-  const parsimoniousAdditional = additionalEdges.filter(
-    (e) => e.distance === 1
-  );
+  // Strategy: Only keep additional edges if they form true reticulations
+  // (i.e., they create an alternative path with the SAME total distance)
+  const parsimoniousAdditional = [];
+
+  for (const edge of additionalEdges) {
+    // Only consider distance=1 edges (direct mutations)
+    if (edge.distance !== 1) continue;
+
+    // Check if this edge creates a cycle with equal parsimony
+    const pathDist = findShortestPath(nodes, mst, edge.source, edge.target);
+
+    // Only keep if MST path is also 1 (equally parsimonious alternative)
+    // This prevents creating redundant connections
+    if (pathDist === 1) {
+      parsimoniousAdditional.push(edge);
+    }
+  }
   console.log(
-    `  Keeping ${parsimoniousAdditional.length} parsimonious reticulations (distance=1)`
+    `  Keeping ${parsimoniousAdditional.length} truly parsimonious reticulations`
   );
 
   const result = [...mst, ...parsimoniousAdditional];
@@ -942,6 +1001,41 @@ function applyMaximumParsimonyFilter(nodes, edges) {
   );
 
   return result;
+}
+
+// ===== Find Shortest Path in Edge Set =====
+function findShortestPath(nodes, edges, sourceId, targetId) {
+  if (sourceId === targetId) return 0;
+
+  // Build adjacency map from edges
+  const adj = new Map();
+  nodes.forEach((n) => adj.set(n.id, []));
+  edges.forEach((e) => {
+    if (adj.has(e.source))
+      adj.get(e.source).push({ id: e.target, dist: e.distance });
+    if (adj.has(e.target))
+      adj.get(e.target).push({ id: e.source, dist: e.distance });
+  });
+
+  // BFS with distance tracking
+  const queue = [{ id: sourceId, dist: 0 }];
+  const visited = new Set([sourceId]);
+
+  while (queue.length > 0) {
+    const { id, dist } = queue.shift();
+
+    if (id === targetId) return dist;
+
+    const neighbors = adj.get(id) || [];
+    for (const neighbor of neighbors) {
+      if (!visited.has(neighbor.id)) {
+        visited.add(neighbor.id);
+        queue.push({ id: neighbor.id, dist: dist + neighbor.dist });
+      }
+    }
+  }
+
+  return Infinity; // No path found
 }
 
 // ===== Minimum Spanning Tree =====
@@ -999,6 +1093,7 @@ function simplifyMedianChains(inputNodes, inputEdges) {
   console.log(
     `  Input: ${inputNodes.length} nodes, ${inputEdges.length} edges`
   );
+  console.log(`  Simplification level: ${algorithmConfig.simplificationLevel}`);
 
   // Work with copies to avoid mutation issues
   let nodes = JSON.parse(JSON.stringify(inputNodes));
@@ -1111,20 +1206,32 @@ function simplifyMedianChains(inputNodes, inputEdges) {
         break;
       }
 
-      // NEW: Process degree-3 median vectors that are redundant
-      // A median is redundant if all its neighbors are observed haplotypes
-      // and removing it doesn't change the parsimony of the network
+      // NEW: Process degree-3 median vectors that are TRULY redundant
+      // More conservative approach - only remove if it doesn't increase total parsimony
       if (neighbors.length === 3) {
+        // Check simplification level - skip degree-3 compression if conservative
+        if (algorithmConfig.simplificationLevel === "conservative") {
+          continue; // Don't compress degree-3 medians in conservative mode
+        }
+
         const [n1, n2, n3] = neighbors;
         const nodeA = nodes.find((n) => n.id === n1.neighbor);
         const nodeB = nodes.find((n) => n.id === n2.neighbor);
         const nodeC = nodes.find((n) => n.id === n3.neighbor);
 
-        // Only compress if all neighbors are observed haplotypes (not medians)
         if (!nodeA || !nodeB || !nodeC) continue;
 
+        // In moderate mode: Only compress if ALL neighbors are observed haplotypes
+        // In aggressive mode: Compress more liberally
         const hasMedianNeighbor =
           nodeA.isMedian || nodeB.isMedian || nodeC.isMedian;
+
+        if (
+          algorithmConfig.simplificationLevel === "moderate" &&
+          hasMedianNeighbor
+        ) {
+          continue;
+        }
 
         // Get distances
         const e1 = findEdge(edges, node.id, nodeA.id);
@@ -1137,22 +1244,25 @@ function simplifyMedianChains(inputNodes, inputEdges) {
         const d2 = e2.distance || 1;
         const d3 = e3.distance || 1;
 
-        // Debug log for first iteration
-        if (iterationCount === 1) {
-          console.log(
-            `    Analyzing ${node.id}: neighbors ${nodeA.id}(${d1}), ${nodeB.id}(${d2}), ${nodeC.id}(${d3})`
-          );
-          console.log(`      Has median neighbor: ${hasMedianNeighbor}`);
-          console.log(`      Sum of distances: ${d1 + d2 + d3}`);
+        // In moderate mode: Only compress if ALL edges are distance = 1
+        // In aggressive mode: Allow compression with higher distances
+        if (
+          algorithmConfig.simplificationLevel === "moderate" &&
+          (d1 !== 1 || d2 !== 1 || d3 !== 1)
+        ) {
+          if (iterationCount === 1) {
+            console.log(
+              `    Skipping ${node.id}: edges not all distance=1 (${d1}, ${d2}, ${d3})`
+            );
+          }
+          continue;
         }
 
-        if (hasMedianNeighbor) continue;
-
-        // Strategy: Always compress degree-3 medians connecting 3 observed haplotypes
-        // This reduces visual complexity while preserving biological information
+        // Check if removing this median would create a triangle where all sides = 2
+        // This is acceptable as it preserves parsimony
         totalCompressed++;
         console.log(
-          `  [${totalCompressed}] Compressing ${node.id} (degree 3) connecting ${nodeA.id}(d=${d1}), ${nodeB.id}(d=${d2}), ${nodeC.id}(d=${d3})`
+          `  [${totalCompressed}] Compressing ${node.id} (degree 3) connecting ${nodeA.id}, ${nodeB.id}, ${nodeC.id}`
         );
 
         // Remove the median node
@@ -1163,34 +1273,27 @@ function simplifyMedianChains(inputNodes, inputEdges) {
           (e) => e.source !== node.id && e.target !== node.id
         );
 
-        // Create direct edges between the three nodes
-        // Connect with distances that preserve parsimony
+        // Create a triangle with all edges = sum of removed edges
         const pairs = [
           [nodeA.id, nodeB.id, d1 + d2],
           [nodeB.id, nodeC.id, d2 + d3],
           [nodeA.id, nodeC.id, d1 + d3],
         ];
 
-        // Sort by distance and keep only the two shortest (forming a path)
-        pairs.sort((a, b) => a[2] - b[2]);
-
-        for (let i = 0; i < 2; i++) {
-          const [source, target, dist] = pairs[i];
+        // Only add edges that don't already exist
+        pairs.forEach(([source, target, dist]) => {
           const existing = findEdge(edges, source, target);
-
-          if (existing) {
-            const oldDist = existing.distance;
-            existing.distance = Math.min(existing.distance, dist);
-            console.log(
-              `    → Updated edge ${source}—${target}: ${oldDist} → ${existing.distance}`
-            );
-          } else {
+          if (!existing) {
             edges.push({ source, target, distance: dist });
             console.log(
               `    → Created edge ${source}—${target} with distance ${dist}`
             );
+          } else {
+            console.log(
+              `    → Edge ${source}—${target} already exists with distance ${existing.distance}`
+            );
           }
-        }
+        });
 
         changed = true;
         break;
@@ -1393,12 +1496,19 @@ function removeObsoleteVertices(nodes, edges) {
     degree.set(edge.target, (degree.get(edge.target) || 0) + 1);
   });
 
-  // Remove median nodes with degree < 2
+  // Remove median nodes with degree < 2 (isolated or connected to only one node)
+  // Median nodes should connect at least 2 haplotypes to be meaningful
   const toRemove = [];
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
-    if (node.isMedian && (degree.get(node.id) || 0) < 2) {
+    const nodeDegree = degree.get(node.id) || 0;
+
+    // Remove median nodes with degree 0 (isolated) or degree 1 (dead-end)
+    if (node.isMedian && nodeDegree < 2) {
       toRemove.push(i);
+      console.log(
+        `    Removing obsolete median ${node.id} (degree=${nodeDegree})`
+      );
     }
   }
 
@@ -1693,7 +1803,15 @@ function interpolateSequence(seq1, seq2, fraction) {
 function hammingDistance(seq1, seq2) {
   let distance = 0;
   for (let i = 0; i < seq1.length; i++) {
-    if (seq1[i] !== seq2[i]) distance++;
+    const char1 = seq1[i];
+    const char2 = seq2[i];
+
+    // Ignore positions with gaps or N in either sequence (like PopART)
+    if (char1 === "N" || char1 === "-" || char2 === "N" || char2 === "-") {
+      continue;
+    }
+
+    if (char1 !== char2) distance++;
   }
   return distance;
 }
