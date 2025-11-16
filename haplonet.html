@@ -193,6 +193,26 @@
                   value="1.0"
                 />
               </div>
+              <div class="network-rotation-control">
+                <div class="control-header">
+                  <label for="networkRotationSlider">Rotação da rede</label>
+                  <button
+                    id="resetRotationBtn"
+                    class="reset-rotation-btn"
+                    title="Resetar rotação"
+                  >
+                    <i class="fa-solid fa-rotate-left"></i>
+                  </button>
+                </div>
+                <input
+                  type="range"
+                  id="networkRotationSlider"
+                  min="-180"
+                  max="180"
+                  step="1"
+                  value="0"
+                />
+              </div>
               <div id="tipContainer" class="tip-container">
                 <button id="tipIcon" class="tip-icon" title="Mostrar dica">
                   <i class="fa-solid fa-circle-info"></i>

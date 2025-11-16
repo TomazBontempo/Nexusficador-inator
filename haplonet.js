@@ -37,6 +37,9 @@ let globalLabelPosition = "center"; // 'center', 'top', 'bottom', 'left', 'right
 // Node size scaling (only for non-median nodes)
 let nodeScale = 1.0;
 
+// Network rotation (in degrees)
+let networkRotation = 0;
+
 let customColors = {
   locations: {}, // { locationName: "rgba(...)" }
   median: "rgba(255, 16, 240, 1)",
@@ -155,6 +158,8 @@ function init() {
     tipIcon: document.getElementById("tipIcon"),
     tipContent: document.getElementById("tipContent"),
     nodeSizeSlider: document.getElementById("nodeSizeSlider"),
+    networkRotationSlider: document.getElementById("networkRotationSlider"),
+    resetRotationBtn: document.getElementById("resetRotationBtn"),
     canvasLegendPanel: document.getElementById("canvasLegendPanel"),
     canvasLegendProportion: document.getElementById("canvasLegendProportion"),
     canvasLegendLocations: document.getElementById("canvasLegendLocations"),
@@ -179,6 +184,34 @@ function init() {
         // Blur the slider to return focus to the document
         elements.nodeSizeSlider.blur();
       }
+    });
+  }
+
+  // Network rotation slider
+  if (elements.networkRotationSlider) {
+    elements.networkRotationSlider.addEventListener("input", (e) => {
+      networkRotation = parseFloat(e.target.value);
+      if (network) renderNetwork();
+    });
+
+    // Prevent space bar from being captured by the slider
+    elements.networkRotationSlider.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        elements.networkRotationSlider.blur();
+      }
+    });
+  }
+
+  // Reset rotation button
+  if (elements.resetRotationBtn) {
+    elements.resetRotationBtn.addEventListener("click", () => {
+      networkRotation = 0;
+      if (elements.networkRotationSlider) {
+        elements.networkRotationSlider.value = "0";
+      }
+      if (network) renderNetwork();
+      showToast("Rotação resetada!");
     });
   }
 }
@@ -1543,6 +1576,53 @@ function centerNetwork(network) {
   });
 }
 
+// ===== Rotation Helpers =====
+function getNetworkCenter() {
+  if (!network || network.nodes.length === 0) return { x: 0, y: 0 };
+
+  let minX = Infinity,
+    maxX = -Infinity;
+  let minY = Infinity,
+    maxY = -Infinity;
+
+  network.nodes.forEach((node) => {
+    minX = Math.min(minX, node.x);
+    maxX = Math.max(maxX, node.x);
+    minY = Math.min(minY, node.y);
+    maxY = Math.max(maxY, node.y);
+  });
+
+  return {
+    x: (minX + maxX) / 2,
+    y: (minY + maxY) / 2,
+  };
+}
+
+function rotatePoint(x, y, centerX, centerY, angleDegrees) {
+  const angleRadians = (angleDegrees * Math.PI) / 180;
+  const cos = Math.cos(angleRadians);
+  const sin = Math.sin(angleRadians);
+
+  // Translate to origin
+  const translatedX = x - centerX;
+  const translatedY = y - centerY;
+
+  // Rotate
+  const rotatedX = translatedX * cos - translatedY * sin;
+  const rotatedY = translatedX * sin + translatedY * cos;
+
+  // Translate back
+  return {
+    x: rotatedX + centerX,
+    y: rotatedY + centerY,
+  };
+}
+
+function rotatePointInverse(x, y, centerX, centerY, angleDegrees) {
+  // Inverse rotation for mouse coordinates
+  return rotatePoint(x, y, centerX, centerY, -angleDegrees);
+}
+
 // ===== Rendering =====
 function renderNetwork() {
   if (!network || !ctx) {
@@ -1574,6 +1654,21 @@ function doRender() {
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
 
+  // Calculate network center for rotation
+  const networkCenter = getNetworkCenter();
+
+  // Helper function to get rotated position
+  const getRotatedPosition = (node) => {
+    if (networkRotation === 0) return { x: node.x, y: node.y };
+    return rotatePoint(
+      node.x,
+      node.y,
+      networkCenter.x,
+      networkCenter.y,
+      networkRotation
+    );
+  };
+
   // Draw edges
   network.edges.forEach((edge, idx) => {
     const source = network.nodes.find((n) => n.id === edge.source);
@@ -1583,25 +1678,33 @@ function doRender() {
       return;
     }
 
+    const sourcePos = getRotatedPosition(source);
+    const targetPos = getRotatedPosition(target);
+
     ctx.beginPath();
-    ctx.moveTo(source.x, source.y);
-    ctx.lineTo(target.x, target.y);
+    ctx.moveTo(sourcePos.x, sourcePos.y);
+    ctx.lineTo(targetPos.x, targetPos.y);
     ctx.strokeStyle = customColors.edge;
     ctx.lineWidth = 2;
     ctx.stroke();
 
     // Draw mutation count or ticks
     if (elements.showMutations.checked && edge.distance > 0) {
-      const midX = (source.x + target.x) / 2;
-      const midY = (source.y + target.y) / 2;
+      const midX = (sourcePos.x + targetPos.x) / 2;
+      const midY = (sourcePos.y + targetPos.y) / 2;
 
       if (elements.mutationToggle.classList.contains("ticks")) {
         // Draw ticks perpendicular to edge
-        drawMutationTicks(ctx, source, target, edge.distance);
+        drawMutationTicks(
+          ctx,
+          { ...source, x: sourcePos.x, y: sourcePos.y },
+          { ...target, x: targetPos.x, y: targetPos.y },
+          edge.distance
+        );
       } else {
         // Draw number perpendicular to edge
-        const dx = target.x - source.x;
-        const dy = target.y - source.y;
+        const dx = targetPos.x - sourcePos.x;
+        const dy = targetPos.y - sourcePos.y;
         const length = Math.sqrt(dx * dx + dy * dy);
         const perpX = -dy / length;
         const perpY = dx / length;
@@ -1625,19 +1728,27 @@ function doRender() {
     // Apply nodeScale only to non-median nodes
     const effectiveSize = node.isMedian ? node.size : node.size * nodeScale;
 
+    // Get rotated position for this node
+    const nodePos = getRotatedPosition(node);
+
     // Check if node has multiple locations (for pie chart)
     const locationData = getNodeLocationData(node);
 
     if (locationData.multipleLocations) {
       // Draw pie chart for nodes with multiple locations
-      const scaledNode = { ...node, size: effectiveSize };
+      const scaledNode = {
+        ...node,
+        x: nodePos.x,
+        y: nodePos.y,
+        size: effectiveSize,
+      };
       drawPieChartNode(ctx, scaledNode, locationData, isBeingDragged);
     } else {
       // Draw solid color node
       const color = getNodeColor(node);
 
       ctx.beginPath();
-      ctx.arc(node.x, node.y, effectiveSize, 0, 2 * Math.PI);
+      ctx.arc(nodePos.x, nodePos.y, effectiveSize, 0, 2 * Math.PI);
       ctx.fillStyle = color;
       ctx.fill();
 
@@ -1659,7 +1770,7 @@ function doRender() {
         ctx.shadowColor = color;
         ctx.shadowBlur = 20;
         ctx.beginPath();
-        ctx.arc(node.x, node.y, effectiveSize, 0, 2 * Math.PI);
+        ctx.arc(nodePos.x, nodePos.y, effectiveSize, 0, 2 * Math.PI);
         ctx.stroke();
         ctx.shadowBlur = 0;
       }
@@ -1668,7 +1779,7 @@ function doRender() {
     // Draw selection highlight
     if (isSelected) {
       ctx.beginPath();
-      ctx.arc(node.x, node.y, effectiveSize + 5, 0, 2 * Math.PI);
+      ctx.arc(nodePos.x, nodePos.y, effectiveSize + 5, 0, 2 * Math.PI);
       ctx.strokeStyle = "#ffc107";
       ctx.lineWidth = 3;
       ctx.stroke();
@@ -1678,6 +1789,15 @@ function doRender() {
     if (!node.isMedian && node.label) {
       const fontSize = 14 * nodeScale; // Scale font with node size
       const labelPos = calculateLabelPosition(node);
+
+      // Apply rotation to label position relative to node
+      const labelPosRotated = rotatePoint(
+        labelPos.x,
+        labelPos.y,
+        networkCenter.x,
+        networkCenter.y,
+        networkRotation
+      );
 
       // Highlight label if hovered or being dragged
       if (hoveredLabel === node || draggedLabelNode === node) {
@@ -1690,7 +1810,7 @@ function doRender() {
       ctx.font = `bold ${fontSize}px Inter`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(node.label, labelPos.x, labelPos.y);
+      ctx.fillText(node.label, labelPosRotated.x, labelPosRotated.y);
 
       if (hoveredLabel === node || draggedLabelNode === node) {
         ctx.restore();
@@ -1701,6 +1821,7 @@ function doRender() {
   // Draw position zones visual feedback during label drag
   if (isDraggingLabel && draggedLabelNode) {
     const node = draggedLabelNode;
+    const nodePos = getRotatedPosition(node);
     const effectiveSize = node.isMedian ? node.size : node.size * nodeScale;
     const offset = effectiveSize + 15;
     const zoneRadius = 25;
@@ -1708,11 +1829,11 @@ function doRender() {
 
     // Draw snap zones
     const zones = [
-      { pos: "center", x: node.x, y: node.y, label: "●" },
-      { pos: "top", x: node.x, y: node.y - offset, label: "▲" },
-      { pos: "bottom", x: node.x, y: node.y + offset, label: "▼" },
-      { pos: "left", x: node.x - offset, y: node.y, label: "◄" },
-      { pos: "right", x: node.x + offset, y: node.y, label: "►" },
+      { pos: "center", x: nodePos.x, y: nodePos.y, label: "●" },
+      { pos: "top", x: nodePos.x, y: nodePos.y - offset, label: "▲" },
+      { pos: "bottom", x: nodePos.x, y: nodePos.y + offset, label: "▼" },
+      { pos: "left", x: nodePos.x - offset, y: nodePos.y, label: "◄" },
+      { pos: "right", x: nodePos.x + offset, y: nodePos.y, label: "►" },
     ];
 
     zones.forEach((zone) => {
@@ -1753,16 +1874,24 @@ function doRender() {
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     const modeText = isApplyToAll ? "TODOS" : "APENAS ESTE";
-    ctx.fillText(modeText, node.x, node.y + effectiveSize + 35);
+    ctx.fillText(modeText, nodePos.x, nodePos.y + effectiveSize + 35);
     ctx.restore();
   }
 
   // Draw selection box
   if (isSelectingBox && selectionBoxStart && selectionBoxEnd) {
-    const minX = Math.min(selectionBoxStart.x, selectionBoxEnd.x);
-    const minY = Math.min(selectionBoxStart.y, selectionBoxEnd.y);
-    const width = Math.abs(selectionBoxEnd.x - selectionBoxStart.x);
-    const height = Math.abs(selectionBoxEnd.y - selectionBoxStart.y);
+    // Always draw box aligned to axes (not rotated) in screen space
+    // But use actual mouse coordinates, not transformed ones
+    const rect = canvas.getBoundingClientRect();
+    const screenStartX = selectionBoxStart.screenX;
+    const screenStartY = selectionBoxStart.screenY;
+    const screenEndX = selectionBoxEnd.screenX;
+    const screenEndY = selectionBoxEnd.screenY;
+
+    const minX = Math.min(screenStartX, screenEndX);
+    const minY = Math.min(screenStartY, screenEndY);
+    const width = Math.abs(screenEndX - screenStartX);
+    const height = Math.abs(screenEndY - screenStartY);
 
     ctx.strokeStyle = "#ffc107";
     ctx.lineWidth = 2;
@@ -2435,8 +2564,22 @@ function handleMouseDown(e) {
   if (labelNode) {
     isDraggingLabel = true;
     draggedLabelNode = labelNode;
-    labelDragStartX = x;
-    labelDragStartY = y;
+    // Transform coordinates if network is rotated
+    if (networkRotation !== 0) {
+      const networkCenter = getNetworkCenter();
+      const inverseMouse = rotatePointInverse(
+        x,
+        y,
+        networkCenter.x,
+        networkCenter.y,
+        networkRotation
+      );
+      labelDragStartX = inverseMouse.x;
+      labelDragStartY = inverseMouse.y;
+    } else {
+      labelDragStartX = x;
+      labelDragStartY = y;
+    }
     canvas.style.cursor = "grabbing";
     // Store if Shift is pressed - Shift = apply to all, no Shift = individual
     draggedLabelNode._applyToAll = e.shiftKey;
@@ -2465,8 +2608,22 @@ function handleMouseDown(e) {
       // Start dragging node(s)
       isDraggingNode = true;
       draggedNode = hoveredNode;
-      dragStartX = x;
-      dragStartY = y;
+      // Store transformed coordinates if network is rotated
+      if (networkRotation !== 0) {
+        const networkCenter = getNetworkCenter();
+        const inverseMouse = rotatePointInverse(
+          x,
+          y,
+          networkCenter.x,
+          networkCenter.y,
+          networkRotation
+        );
+        dragStartX = inverseMouse.x;
+        dragStartY = inverseMouse.y;
+      } else {
+        dragStartX = x;
+        dragStartY = y;
+      }
       canvas.style.cursor = "grabbing";
     }
   } else {
@@ -2477,8 +2634,32 @@ function handleMouseDown(e) {
     }
     // Start selection box
     isSelectingBox = true;
-    selectionBoxStart = { x, y };
-    selectionBoxEnd = { x, y };
+    // Store both screen coordinates (for drawing) and transformed coordinates (for selection)
+    if (networkRotation !== 0) {
+      const networkCenter = getNetworkCenter();
+      const inverseMouse = rotatePointInverse(
+        x,
+        y,
+        networkCenter.x,
+        networkCenter.y,
+        networkRotation
+      );
+      selectionBoxStart = {
+        x: inverseMouse.x,
+        y: inverseMouse.y,
+        screenX: x,
+        screenY: y,
+      };
+      selectionBoxEnd = {
+        x: inverseMouse.x,
+        y: inverseMouse.y,
+        screenX: x,
+        screenY: y,
+      };
+    } else {
+      selectionBoxStart = { x, y, screenX: x, screenY: y };
+      selectionBoxEnd = { x, y, screenX: x, screenY: y };
+    }
     renderNetwork();
   }
 }
@@ -2501,10 +2682,26 @@ function handleMouseMove(e) {
   if (isDraggingLabel && draggedLabelNode) {
     e.preventDefault();
 
-    // Calculate snap position based on drag
+    // Apply inverse rotation to mouse coordinates if network is rotated
+    let mouseX = x;
+    let mouseY = y;
+    if (networkRotation !== 0) {
+      const networkCenter = getNetworkCenter();
+      const inverseMouse = rotatePointInverse(
+        x,
+        y,
+        networkCenter.x,
+        networkCenter.y,
+        networkRotation
+      );
+      mouseX = inverseMouse.x;
+      mouseY = inverseMouse.y;
+    }
+
+    // Calculate snap position based on drag (using transformed coordinates)
     const newPosition = getSnapPosition(
-      x,
-      y,
+      mouseX,
+      mouseY,
       draggedLabelNode.x,
       draggedLabelNode.y
     );
@@ -2530,8 +2727,25 @@ function handleMouseMove(e) {
   // Dragging node(s)
   if (isDraggingNode && draggedNode) {
     e.preventDefault();
-    const dx = x - dragStartX;
-    const dy = y - dragStartY;
+
+    // Transform mouse coordinates if network is rotated
+    let currentX = x;
+    let currentY = y;
+    if (networkRotation !== 0) {
+      const networkCenter = getNetworkCenter();
+      const inverseMouse = rotatePointInverse(
+        x,
+        y,
+        networkCenter.x,
+        networkCenter.y,
+        networkRotation
+      );
+      currentX = inverseMouse.x;
+      currentY = inverseMouse.y;
+    }
+
+    const dx = currentX - dragStartX;
+    const dy = currentY - dragStartY;
 
     // Move all selected nodes
     selectedNodes.forEach((node) => {
@@ -2539,8 +2753,8 @@ function handleMouseMove(e) {
       node.y += dy;
     });
 
-    dragStartX = x;
-    dragStartY = y;
+    dragStartX = currentX;
+    dragStartY = currentY;
     renderNetwork();
     hideTooltip();
     return;
@@ -2549,7 +2763,25 @@ function handleMouseMove(e) {
   // Drawing selection box
   if (isSelectingBox) {
     e.preventDefault();
-    selectionBoxEnd = { x, y };
+    // Store both screen coordinates (for drawing) and transformed coordinates (for selection)
+    if (networkRotation !== 0) {
+      const networkCenter = getNetworkCenter();
+      const inverseMouse = rotatePointInverse(
+        x,
+        y,
+        networkCenter.x,
+        networkCenter.y,
+        networkRotation
+      );
+      selectionBoxEnd = {
+        x: inverseMouse.x,
+        y: inverseMouse.y,
+        screenX: x,
+        screenY: y,
+      };
+    } else {
+      selectionBoxEnd = { x, y, screenX: x, screenY: y };
+    }
     renderNetwork();
     return;
   }
@@ -2650,14 +2882,33 @@ function handleMouseUp() {
 
     // Select nodes within the box
     if (selectionBoxStart && selectionBoxEnd) {
-      const minX = Math.min(selectionBoxStart.x, selectionBoxEnd.x);
-      const maxX = Math.max(selectionBoxStart.x, selectionBoxEnd.x);
-      const minY = Math.min(selectionBoxStart.y, selectionBoxEnd.y);
-      const maxY = Math.max(selectionBoxStart.y, selectionBoxEnd.y);
+      // Use screen coordinates for comparison
+      const minX = Math.min(selectionBoxStart.screenX, selectionBoxEnd.screenX);
+      const maxX = Math.max(selectionBoxStart.screenX, selectionBoxEnd.screenX);
+      const minY = Math.min(selectionBoxStart.screenY, selectionBoxEnd.screenY);
+      const maxY = Math.max(selectionBoxStart.screenY, selectionBoxEnd.screenY);
 
       const nodesInBox = network.nodes.filter((node) => {
+        // Get rotated position of node (visual position on screen)
+        let nodeScreenX = node.x;
+        let nodeScreenY = node.y;
+        if (networkRotation !== 0) {
+          const networkCenter = getNetworkCenter();
+          const rotatedPos = rotatePoint(
+            node.x,
+            node.y,
+            networkCenter.x,
+            networkCenter.y,
+            networkRotation
+          );
+          nodeScreenX = rotatedPos.x;
+          nodeScreenY = rotatedPos.y;
+        }
         return (
-          node.x >= minX && node.x <= maxX && node.y >= minY && node.y <= maxY
+          nodeScreenX >= minX &&
+          nodeScreenX <= maxX &&
+          nodeScreenY >= minY &&
+          nodeScreenY <= maxY
         );
       });
 
@@ -2753,9 +3004,19 @@ function handleWheel(e) {
 function getNodeAtPosition(x, y) {
   if (!network) return null;
 
+  // Apply inverse rotation to mouse position
+  const networkCenter = getNetworkCenter();
+  const mousePos = rotatePointInverse(
+    x,
+    y,
+    networkCenter.x,
+    networkCenter.y,
+    networkRotation
+  );
+
   for (const node of network.nodes) {
-    const dx = x - node.x;
-    const dy = y - node.y;
+    const dx = mousePos.x - node.x;
+    const dy = mousePos.y - node.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
     // Use effective size (scaled for non-median nodes)
     const effectiveSize = node.isMedian ? node.size : node.size * nodeScale;
@@ -2769,6 +3030,16 @@ function getNodeAtPosition(x, y) {
 // ===== Label Position Functions =====
 function getLabelAtPosition(x, y) {
   if (!network) return null;
+
+  // Apply inverse rotation to mouse position
+  const networkCenter = getNetworkCenter();
+  const mousePos = rotatePointInverse(
+    x,
+    y,
+    networkCenter.x,
+    networkCenter.y,
+    networkRotation
+  );
 
   // Check labels in reverse order (topmost first)
   for (let i = network.nodes.length - 1; i >= 0; i--) {
@@ -2787,10 +3058,10 @@ function getLabelAtPosition(x, y) {
 
     // Check if mouse is over the label
     if (
-      x >= labelPos.x - textWidth / 2 &&
-      x <= labelPos.x + textWidth / 2 &&
-      y >= labelPos.y - textHeight / 2 &&
-      y <= labelPos.y + textHeight / 2
+      mousePos.x >= labelPos.x - textWidth / 2 &&
+      mousePos.x <= labelPos.x + textWidth / 2 &&
+      mousePos.y >= labelPos.y - textHeight / 2 &&
+      mousePos.y <= labelPos.y + textHeight / 2
     ) {
       return node;
     }
@@ -2929,12 +3200,29 @@ function resetLayout() {
       node.vx = 0;
       node.vy = 0;
     }
+    // Reset individual label positions
+    delete node.labelPosition;
   });
 
   // Reset zoom and pan
   scale = 1;
   offsetX = 0;
   offsetY = 0;
+
+  // Reset node scale
+  nodeScale = 1.0;
+  if (elements.nodeSizeSlider) {
+    elements.nodeSizeSlider.value = "1.0";
+  }
+
+  // Reset network rotation
+  networkRotation = 0;
+  if (elements.networkRotationSlider) {
+    elements.networkRotationSlider.value = "0";
+  }
+
+  // Reset global label position
+  globalLabelPosition = "center";
 
   renderNetwork();
   showToast("Layout restaurado!");
@@ -2952,27 +3240,54 @@ function exportPNG() {
 
 // Prepara todos os dados necessários para exportação
 function prepareNetworkExportData() {
-  // Calcular bounds da rede
+  // Calculate network center for rotation
+  const networkCenter = getNetworkCenter();
+
+  // Calcular bounds da rede (with rotation applied)
   let minX = Infinity,
     minY = Infinity,
     maxX = -Infinity,
     maxY = -Infinity;
 
   network.nodes.forEach((node) => {
+    // Apply rotation to node position
+    const nodePos =
+      networkRotation !== 0
+        ? rotatePoint(
+            node.x,
+            node.y,
+            networkCenter.x,
+            networkCenter.y,
+            networkRotation
+          )
+        : { x: node.x, y: node.y };
+
     const margin = node.size + 30;
-    minX = Math.min(minX, node.x - margin);
-    minY = Math.min(minY, node.y - margin);
-    maxX = Math.max(maxX, node.x + margin);
-    maxY = Math.max(maxY, node.y + margin);
+    minX = Math.min(minX, nodePos.x - margin);
+    minY = Math.min(minY, nodePos.y - margin);
+    maxX = Math.max(maxX, nodePos.x + margin);
+    maxY = Math.max(maxY, nodePos.y + margin);
 
     // Consider label position for bounds (use scale 1.0 for export)
     if (!node.isMedian && node.label) {
       const labelPos = calculateLabelPosition(node, 1.0);
+      // Apply rotation to label position
+      const labelPosRotated =
+        networkRotation !== 0
+          ? rotatePoint(
+              labelPos.x,
+              labelPos.y,
+              networkCenter.x,
+              networkCenter.y,
+              networkRotation
+            )
+          : labelPos;
+
       const labelMargin = 40; // Extra space for label text
-      minX = Math.min(minX, labelPos.x - labelMargin);
-      minY = Math.min(minY, labelPos.y - labelMargin);
-      maxX = Math.max(maxX, labelPos.x + labelMargin);
-      maxY = Math.max(maxY, labelPos.y + labelMargin);
+      minX = Math.min(minX, labelPosRotated.x - labelMargin);
+      minY = Math.min(minY, labelPosRotated.y - labelMargin);
+      maxX = Math.max(maxX, labelPosRotated.x + labelMargin);
+      maxY = Math.max(maxY, labelPosRotated.y + labelMargin);
     }
   });
 
@@ -3009,30 +3324,53 @@ function renderNetworkToPNG(exportData) {
   ctx.save();
   ctx.translate(exportData.offsetX, exportData.offsetY);
 
+  // Calculate network center for rotation
+  const networkCenter = getNetworkCenter();
+
+  // Helper function to get rotated position
+  const getRotatedPosition = (node) => {
+    if (networkRotation === 0) return { x: node.x, y: node.y };
+    return rotatePoint(
+      node.x,
+      node.y,
+      networkCenter.x,
+      networkCenter.y,
+      networkRotation
+    );
+  };
+
   // Desenhar edges
   network.edges.forEach((edge) => {
     const source = network.nodes.find((n) => n.id === edge.source);
     const target = network.nodes.find((n) => n.id === edge.target);
     if (!source || !target) return;
 
+    const sourcePos = getRotatedPosition(source);
+    const targetPos = getRotatedPosition(target);
+
     ctx.beginPath();
-    ctx.moveTo(source.x, source.y);
-    ctx.lineTo(target.x, target.y);
+    ctx.moveTo(sourcePos.x, sourcePos.y);
+    ctx.lineTo(targetPos.x, targetPos.y);
     ctx.strokeStyle = customColors.edge;
     ctx.lineWidth = 2;
     ctx.stroke();
 
     // Mutations
     if (exportData.showMutations && edge.distance > 0) {
-      const midX = (source.x + target.x) / 2;
-      const midY = (source.y + target.y) / 2;
+      const midX = (sourcePos.x + targetPos.x) / 2;
+      const midY = (sourcePos.y + targetPos.y) / 2;
 
       if (exportData.useTicks) {
-        drawMutationTicks(ctx, source, target, edge.distance);
+        drawMutationTicks(
+          ctx,
+          { ...source, x: sourcePos.x, y: sourcePos.y },
+          { ...target, x: targetPos.x, y: targetPos.y },
+          edge.distance
+        );
       } else {
         // Draw number perpendicular to edge
-        const dx = target.x - source.x;
-        const dy = target.y - source.y;
+        const dx = targetPos.x - sourcePos.x;
+        const dy = targetPos.y - sourcePos.y;
         const length = Math.sqrt(dx * dx + dy * dy);
         const perpX = -dy / length;
         const perpY = dx / length;
@@ -3050,14 +3388,20 @@ function renderNetworkToPNG(exportData) {
 
   // Desenhar nodes
   network.nodes.forEach((node) => {
+    const nodePos = getRotatedPosition(node);
     const locationData = getNodeLocationData(node);
 
     if (locationData.multipleLocations) {
-      drawPieChartNode(ctx, node, locationData, false);
+      drawPieChartNode(
+        ctx,
+        { ...node, x: nodePos.x, y: nodePos.y },
+        locationData,
+        false
+      );
     } else {
       const color = getNodeColor(node);
       ctx.beginPath();
-      ctx.arc(node.x, node.y, node.size, 0, 2 * Math.PI);
+      ctx.arc(nodePos.x, nodePos.y, node.size, 0, 2 * Math.PI);
       ctx.fillStyle = color;
       ctx.fill();
       ctx.strokeStyle = node.isMedian ? "#0f172a" : "#1e293b";
@@ -3068,11 +3412,20 @@ function renderNetworkToPNG(exportData) {
     // Label do nó - usar posição calculada
     if (!node.isMedian && node.label) {
       const labelPos = calculateLabelPosition(node, 1.0); // Use scale 1.0 for export
+      // Apply rotation to label position
+      const labelPosRotated = rotatePoint(
+        labelPos.x,
+        labelPos.y,
+        networkCenter.x,
+        networkCenter.y,
+        networkRotation
+      );
+
       ctx.fillStyle = customColors.edge;
       ctx.font = "bold 14px Inter";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(node.label, labelPos.x, labelPos.y);
+      ctx.fillText(node.label, labelPosRotated.x, labelPosRotated.y);
     }
   });
 
