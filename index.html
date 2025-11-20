@@ -1,333 +1,261 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nexusficador-inator</title>
-    <link rel="stylesheet" href="style.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-    />
-    <link
-      rel="icon"
-      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🤖</text></svg>"
-    />
-    <script
-      type="module"
-      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
-    ></script>
-    <script
-      nomodule
-      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
-    ></script>
-  </head>
-  <body>
-    <div class="container">
-      <header class="header">
-        <h1>
-          <a
-            href="./index.html"
-            class="brand-link"
-            aria-label="Nexusficador-inator"
-            style="color: inherit; text-decoration: none"
-          >
-            <i
-              class="fa-solid fa-robot"
-              style="font-size: 2.5rem; vertical-align: middle"
-            ></i>
-            Nexusficador-inator<sup>™</sup>
-          </a>
-        </h1>
-        <p class="subtitle">
-          FASTA entra, NEXUS sai. Porque nenhum cientista maluco deveria perder
-          tempo com formatação manual!
-        </p>
-      </header>
 
-      <main class="main-content">
-        <!-- File Upload Section -->
-        <section class="upload-section">
-          <div class="drop-zone" id="dropZone">
-            <ion-icon name="cloud-upload-outline" class="drop-icon"></ion-icon>
-            <h3>Arraste seu arquivo FASTA aqui</h3>
-            <p>ou clique para selecionar</p>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexusficador-inator</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🤖</text></svg>" />
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</head>
 
-            <input
-              type="file"
-              id="fastaInput"
-              accept=".fas,.fasta,.fa,.txt"
-              hidden
-            />
-            <button type="button" class="btn btn-secondary" id="selectFileBtn">
-              <ion-icon name="folder-open-outline"></ion-icon>
-              Selecionar arquivo
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>
+        <a href="./index.html" class="brand-link" aria-label="Nexusficador-inator"
+          style="color: inherit; text-decoration: none">
+          <i class="fa-solid fa-robot" style="font-size: 2.5rem; vertical-align: middle"></i>
+          Nexusficador-inator<sup>™</sup>
+        </a>
+      </h1>
+      <p class="subtitle">
+        FASTA entra, NEXUS sai. Porque nenhum cientista maluco deveria perder
+        tempo com formatação manual!
+      </p>
+    </header>
+
+    <main class="main-content">
+      <!-- File Upload Section -->
+      <section class="upload-section">
+        <div class="drop-zone" id="dropZone">
+          <ion-icon name="cloud-upload-outline" class="drop-icon"></ion-icon>
+          <h3>Arraste seu arquivo FASTA aqui</h3>
+          <p>ou clique para selecionar</p>
+
+          <input type="file" id="fastaInput" accept=".fas,.fasta,.fa,.txt" hidden />
+          <button type="button" class="btn btn-secondary" id="selectFileBtn">
+            <ion-icon name="folder-open-outline"></ion-icon>
+            Selecionar arquivo
+          </button>
+          <small class="file-info">Formatos aceitos: .fas, .fasta, .fa (máx. 50MB)</small>
+        </div>
+        <div class="format-instructions">
+          <strong>Formato dos nomes das sequências no FASTA:</strong><br />
+          <code>Nome-Localidade1</code> ou
+          <code>Nome-Localidade1-Localidade2</code> <br />
+          <small>Exemplo: Perry-AreaDos3Estados ou
+            Perry-AreaDos3Estados-Danville</small>
+        </div>
+
+        <!-- Selected File Card -->
+        <div id="fileCard" class="file-card" style="display: none">
+          <div class="file-card-content">
+            <ion-icon name="document-text-outline" class="file-icon"></ion-icon>
+            <div class="file-details">
+              <strong id="fileName">arquivo.fas</strong>
+              <span id="fileSize" class="file-size">0 KB</span>
+            </div>
+            <button type="button" class="btn-icon" id="removeFileBtn" title="Remover arquivo">
+              <ion-icon name="close-outline"></ion-icon>
             </button>
-            <small class="file-info"
-              >Formatos aceitos: .fas, .fasta, .fa (máx. 50MB)</small
-            >
           </div>
-          <div class="format-instructions">
-            <strong>Formato dos nomes das sequências no FASTA:</strong><br />
-            <code>Nome-Localidade1</code> ou
-            <code>Nome-Localidade1-Localidade2</code> <br />
-            <small
-              >Exemplo: Perry-AreaDos3Estados ou
-              Perry-AreaDos3Estados-Danville</small
-            >
-          </div>
-
-          <!-- Selected File Card -->
-          <div id="fileCard" class="file-card" style="display: none">
-            <div class="file-card-content">
-              <ion-icon
-                name="document-text-outline"
-                class="file-icon"
-              ></ion-icon>
-              <div class="file-details">
-                <strong id="fileName">arquivo.fas</strong>
-                <span id="fileSize" class="file-size">0 KB</span>
-              </div>
-              <button
-                type="button"
-                class="btn-icon"
-                id="removeFileBtn"
-                title="Remover arquivo"
-              >
-                <ion-icon name="close-outline"></ion-icon>
-              </button>
+          <div id="fileStats" class="file-stats" style="display: none">
+            <div class="stat-item">
+              <ion-icon name="layers-outline"></ion-icon>
+              <span><strong id="seqCount">0</strong> sequências</span>
             </div>
-            <div id="fileStats" class="file-stats" style="display: none">
-              <div class="stat-item">
-                <ion-icon name="layers-outline"></ion-icon>
-                <span><strong id="seqCount">0</strong> sequências</span>
-              </div>
-              <div class="stat-item">
-                <ion-icon name="resize-outline"></ion-icon>
-                <span><strong id="seqLength">0</strong>pb</span>
-              </div>
-              <div class="stat-item">
-                <ion-icon name="git-branch-outline"></ion-icon>
-                <span><strong id="hapCount">0</strong> haplótipos</span>
-              </div>
+            <div class="stat-item">
+              <ion-icon name="resize-outline"></ion-icon>
+              <span><strong id="seqLength">0</strong>pb</span>
             </div>
-          </div>
-        </section>
-
-        <!-- Options Section -->
-        <section
-          class="options-section"
-          id="optionsSection"
-          style="display: none"
-        >
-          <h3>
-            <ion-icon name="settings-outline"></ion-icon>
-            Opções de Exportação
-          </h3>
-
-          <div class="option-group">
-            <label class="radio-label">
-              <input type="radio" name="outputMode" value="complete" checked />
-              <div class="radio-content">
-                <strong>Modo Completo</strong>
-                <small
-                  >Sequências completas para análises filogenéticas (PAUP,
-                  MrBayes, MEGA)</small
-                >
-              </div>
-            </label>
-
-            <label class="radio-label">
-              <input type="radio" name="outputMode" value="popart" />
-              <div class="radio-content">
-                <strong>Modo PopArt</strong>
-                <small
-                  >Mantém apenas as posições que variam entre sequências
-                  (PopArt)</small
-                >
-              </div>
-            </label>
-          </div>
-
-          <div class="option-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="includeTraits" checked />
-              <div class="checkbox-content">
-                <strong>Incluir distribuição geográfica</strong>
-                <small
-                  >Adiciona informações de localidade para cada haplótipo.<br />
-                  (requer nomes FASTA com padrão Nome-Localidade ou
-                  Nome-Localidade1-Localidade2)</small
-                >
-              </div>
-            </label>
-          </div>
-
-          <div class="biome-config" id="biomeConfig">
-            <h4>Localidades detectadas:</h4>
-            <div id="biomeList" class="biome-tags">
-              <!-- Biome tags will be added here dynamically -->
-            </div>
-          </div>
-        </section>
-
-        <!-- Preview Section -->
-        <section
-          class="preview-section"
-          id="previewSection"
-          style="display: none"
-        >
-          <h3>
-            <ion-icon name="eye-outline"></ion-icon>
-            Pré-visualização
-          </h3>
-          <div class="preview-content">
-            <div class="preview-box">
-              <h4>Haplótipos Detectados</h4>
-              <pre id="haplotypePreview"></pre>
-            </div>
-            <div class="preview-box">
-              <h4>Distribuição Geográfica</h4>
-              <pre id="traitsPreview"></pre>
-            </div>
-          </div>
-        </section>
-
-        <!-- Action Buttons -->
-        <section
-          class="action-section"
-          id="actionSection"
-          style="display: none"
-        >
-          <button
-            type="button"
-            class="btn btn-primary"
-            id="generateBtn"
-            disabled
-          >
-            <ion-icon name="download-outline"></ion-icon>
-            Gerar arquivo NEXUS
-          </button>
-          <button type="button" class="btn btn-secondary" id="resetBtn">
-            <ion-icon name="refresh-outline"></ion-icon>
-            Novo arquivo
-          </button>
-        </section>
-
-        <!-- Error Display -->
-        <div id="errorDisplay" class="error-display" style="display: none">
-          <ion-icon name="warning-outline"></ion-icon>
-          <div class="error-content">
-            <strong>Erro ao processar arquivo</strong>
-            <p id="errorMessage"></p>
-          </div>
-        </div>
-
-        <!-- Loading Spinner -->
-        <div id="loadingSpinner" class="spinner-overlay" style="display: none">
-          <div class="spinner"></div>
-          <p>Processando arquivo...</p>
-        </div>
-
-        <!-- Success Toast -->
-        <div id="successToast" class="toast" style="display: none">
-          <ion-icon name="checkmark-circle-outline"></ion-icon>
-          <span id="toastMessage">Arquivo gerado com sucesso!</span>
-        </div>
-
-        <!-- Ambiguity Modal -->
-        <div id="ambiguityModal" class="modal-overlay" style="display: none">
-          <div class="modal-content">
-            <h3>Caracteres Ambíguos Detectados</h3>
-            <p id="ambiguityMessage"></p>
-            <div class="modal-buttons">
-              <button id="countAsDifferencesBtn" class="btn btn-primary">
-                Sim
-              </button>
-              <button id="replaceWithMostFrequentBtn" class="btn btn-secondary">
-                Não
-              </button>
+            <div class="stat-item">
+              <ion-icon name="git-branch-outline"></ion-icon>
+              <span><strong id="hapCount">0</strong> haplótipos</span>
             </div>
           </div>
         </div>
+      </section>
 
-        <!-- Tie Resolution Modal -->
-        <div id="tieModal" class="modal-overlay" style="display: none">
-          <div class="modal-content">
-            <h3>Empate na Frequência</h3>
-            <p id="tieMessage"></p>
-            <div class="modal-buttons">
-              <button
-                class="btn btn-primary nucleotide-btn"
-                data-nucleotide="A"
-              >
-                A
-              </button>
-              <button
-                class="btn btn-primary nucleotide-btn"
-                data-nucleotide="T"
-              >
-                T
-              </button>
-              <button
-                class="btn btn-primary nucleotide-btn"
-                data-nucleotide="C"
-              >
-                C
-              </button>
-              <button
-                class="btn btn-primary nucleotide-btn"
-                data-nucleotide="G"
-              >
-                G
-              </button>
+      <!-- Options Section -->
+      <section class="options-section" id="optionsSection" style="display: none">
+        <h3>
+          <ion-icon name="settings-outline"></ion-icon>
+          Opções de Exportação
+        </h3>
+
+        <div class="option-group">
+          <label class="radio-label">
+            <input type="radio" name="outputMode" value="complete" checked />
+            <div class="radio-content">
+              <strong>Modo Completo</strong>
+              <small>Sequências completas para análises filogenéticas (PAUP,
+                MrBayes, MEGA)</small>
             </div>
+          </label>
+
+          <label class="radio-label">
+            <input type="radio" name="outputMode" value="popart" />
+            <div class="radio-content">
+              <strong>Modo PopArt</strong>
+              <small>Mantém apenas as posições que variam entre sequências
+                (PopArt)</small>
+            </div>
+          </label>
+        </div>
+
+        <div class="option-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="includeTraits" checked />
+            <div class="checkbox-content">
+              <strong>Incluir distribuição geográfica</strong>
+              <small>Adiciona informações de localidade para cada haplótipo.<br />
+                (requer nomes FASTA com padrão Nome-Localidade ou
+                Nome-Localidade1-Localidade2)</small>
+            </div>
+          </label>
+        </div>
+
+        <div class="biome-config" id="biomeConfig">
+          <h4>Localidades detectadas:</h4>
+          <div id="biomeList" class="biome-tags">
+            <!-- Biome tags will be added here dynamically -->
           </div>
         </div>
-      </main>
+      </section>
 
-      <footer class="footer">
-        <p>
-          <ion-icon name="information-circle-outline"></ion-icon>
-          Sistema desenvolvido para análises filogenéticas e filogeográficas
-        </p>
-        <div
-          style="
+      <!-- Preview Section -->
+      <section class="preview-section" id="previewSection" style="display: none">
+        <h3>
+          <ion-icon name="eye-outline"></ion-icon>
+          Pré-visualização
+        </h3>
+        <div class="preview-content">
+          <div class="preview-box">
+            <h4>Haplótipos Detectados</h4>
+            <pre id="haplotypePreview"></pre>
+          </div>
+          <div class="preview-box">
+            <h4>Distribuição Geográfica</h4>
+            <pre id="traitsPreview"></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Action Buttons -->
+      <section class="action-section" id="actionSection" style="display: none">
+        <button type="button" class="btn btn-primary" id="generateBtn" disabled>
+          <ion-icon name="download-outline"></ion-icon>
+          Gerar arquivo NEXUS
+        </button>
+        <button type="button" class="btn btn-success" id="visualizeBtn" disabled
+          style="background-color: #28a745; color: white; border: none;">
+          <ion-icon name="git-network-outline"></ion-icon>
+          Visualizar Rede
+        </button>
+        <button type="button" class="btn btn-secondary" id="resetBtn">
+          <ion-icon name="refresh-outline"></ion-icon>
+          Novo arquivo
+        </button>
+      </section>
+
+      <!-- Error Display -->
+      <div id="errorDisplay" class="error-display" style="display: none">
+        <ion-icon name="warning-outline"></ion-icon>
+        <div class="error-content">
+          <strong>Erro ao processar arquivo</strong>
+          <p id="errorMessage"></p>
+        </div>
+      </div>
+
+      <!-- Loading Spinner -->
+      <div id="loadingSpinner" class="spinner-overlay" style="display: none">
+        <div class="spinner"></div>
+        <p>Processando arquivo...</p>
+      </div>
+
+      <!-- Success Toast -->
+      <div id="successToast" class="toast" style="display: none">
+        <ion-icon name="checkmark-circle-outline"></ion-icon>
+        <span id="toastMessage">Arquivo gerado com sucesso!</span>
+      </div>
+
+      <!-- Ambiguity Modal -->
+      <div id="ambiguityModal" class="modal-overlay" style="display: none">
+        <div class="modal-content">
+          <h3>Caracteres Ambíguos Detectados</h3>
+          <p id="ambiguityMessage"></p>
+          <div class="modal-buttons">
+            <button id="countAsDifferencesBtn" class="btn btn-primary">
+              Sim
+            </button>
+            <button id="replaceWithMostFrequentBtn" class="btn btn-secondary">
+              Não
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tie Resolution Modal -->
+      <div id="tieModal" class="modal-overlay" style="display: none">
+        <div class="modal-content">
+          <h3>Empate na Frequência</h3>
+          <p id="tieMessage"></p>
+          <div class="modal-buttons">
+            <button class="btn btn-primary nucleotide-btn" data-nucleotide="A">
+              A
+            </button>
+            <button class="btn btn-primary nucleotide-btn" data-nucleotide="T">
+              T
+            </button>
+            <button class="btn btn-primary nucleotide-btn" data-nucleotide="C">
+              C
+            </button>
+            <button class="btn btn-primary nucleotide-btn" data-nucleotide="G">
+              G
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>
+        <ion-icon name="information-circle-outline"></ion-icon>
+        Sistema desenvolvido para análises filogenéticas e filogeográficas
+      </p>
+      <div style="
             display: flex;
             gap: 1rem;
             align-items: center;
             flex-wrap: wrap;
             justify-content: center;
-          "
-        >
-          <a href="./README.md" target="_blank" class="footer-link">
-            <ion-icon name="help-circle-outline"></ion-icon>
-            Ver documentação
-          </a>
-          <a href="./haplonet.html" class="footer-link">
-            <ion-icon name="git-network-outline"></ion-icon>
-            Haplonet-Inator™
-          </a>
-        </div>
-        <p>
-          <a
-            href="https://bontempoweb.com"
-            rel="nofollow"
-            target="_blank"
-            class="hover:text-white transition"
-          >
-            Feito por BontempoWeb
-          </a>
-        </p>
-      </footer>
-    </div>
+          ">
+        <a href="./README.md" target="_blank" class="footer-link">
+          <ion-icon name="help-circle-outline"></ion-icon>
+          Ver documentação
+        </a>
+        <a href="./haplonet.html" class="footer-link">
+          <ion-icon name="git-network-outline"></ion-icon>
+          Haplonet-Inator™
+        </a>
+      </div>
+      <p>
+        <a href="https://bontempoweb.com" rel="nofollow" target="_blank" class="hover:text-white transition">
+          Feito por BontempoWeb
+        </a>
+      </p>
+    </footer>
+  </div>
 
-    <script src="script.js"></script>
-  </body>
+  <script src="script.js"></script>
+</body>
+
 </html>

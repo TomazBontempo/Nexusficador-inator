@@ -1,0 +1,195 @@
+/* Haplotnet Specific Styles */
+
+.full-height {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  padding: 0;
+}
+
+.header.compact {
+  padding: 1rem 2rem;
+  flex-shrink: 0;
+}
+
+.header.compact h1 {
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.divider {
+  color: var(--text-secondary);
+  margin: 0 0.5rem;
+}
+
+.current-app {
+  color: var(--primary);
+}
+
+.network-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  /* Ensure sidebar and viz are side-by-side */
+  overflow: hidden;
+  padding: 0;
+  gap: 0;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 300px;
+  background-color: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 10;
+}
+
+.panel {
+  background-color: var(--background);
+  border-radius: var(--radius);
+  padding: 1rem;
+  border: 1px solid var(--border);
+}
+
+.panel h3 {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.file-upload-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.file-name-display {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.control-group {
+  margin-bottom: 1rem;
+}
+
+.control-group:last-child {
+  margin-bottom: 0;
+}
+
+.control-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.form-select,
+.form-input {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* Visualization Area */
+.visualization-area {
+  flex: 1;
+  position: relative;
+  background-color: #f8f9fa;
+  /* Light gray background for canvas */
+  overflow: hidden;
+}
+
+.network-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.placeholder-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.large-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+/* Zoom Controls */
+.zoom-controls {
+  position: absolute;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--surface);
+  padding: 0.5rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.zoom-controls button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  transition: all 0.2s;
+}
+
+.zoom-controls button:hover {
+  background: var(--background);
+  color: var(--primary);
+}
+
+/* Legend */
+.legend-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}

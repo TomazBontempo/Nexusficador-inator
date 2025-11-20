@@ -70,8 +70,15 @@ function setupEventListeners() {
   elements.removeFileBtn.addEventListener("click", resetAll);
 
   // Action buttons
-  elements.generateBtn.addEventListener("click", generateNexus);
+  elements.generateBtn.addEventListener("click", () => generateNexus('download'));
   elements.resetBtn.addEventListener("click", resetAll);
+
+  // New Visualize Button
+  const visualizeBtn = document.getElementById('visualizeBtn');
+  if (visualizeBtn) {
+    visualizeBtn.addEventListener('click', () => generateNexus('visualize'));
+    elements.visualizeBtn = visualizeBtn;
+  }
 }
 
 // ===== Drag and Drop Handlers =====
@@ -454,7 +461,7 @@ function identifyVariableSites(haplotypes) {
 }
 
 // ===== Generate NEXUS File =====
-function generateNexus() {
+function generateNexus(action = 'download') {
   if (!parsedData) return;
 
   const outputMode = document.querySelector(
@@ -529,8 +536,23 @@ function generateNexus() {
     nexusContent += "\n\n;\nEND;\n";
   }
 
-  // Download file
-  downloadNexus(nexusContent, outputMode);
+  // Handle Action
+  if (action === 'download') {
+    downloadNexus(nexusContent, outputMode);
+  } else if (action === 'visualize') {
+    console.log('Saving to sessionStorage and redirecting...');
+    try {
+      sessionStorage.setItem('nexusData', nexusContent);
+      sessionStorage.setItem('nexusFileName', fastaData.file.name);
+      // Small delay to ensure storage is committed (rarely needed but safe)
+      setTimeout(() => {
+        window.location.href = 'Haplotnet/index.html';
+      }, 100);
+    } catch (e) {
+      console.error('Error saving to sessionStorage:', e);
+      alert('Erro ao salvar dados para visualização. Verifique se os cookies/storage estão habilitados.');
+    }
+  }
 }
 
 function downloadNexus(content, mode) {
@@ -712,9 +734,11 @@ function updateGenerateButtonState() {
   if (hasDualLocations && !selectedLocation) {
     elements.generateBtn.disabled = true;
     elements.generateBtn.title = "Selecione uma localidade antes de gerar";
+    if (elements.visualizeBtn) elements.visualizeBtn.disabled = true;
   } else {
     elements.generateBtn.disabled = false;
     elements.generateBtn.title = "";
+    if (elements.visualizeBtn) elements.visualizeBtn.disabled = false;
   }
 }
 

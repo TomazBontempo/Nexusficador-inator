@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Haplotnet-inator</title>
+    <link rel="stylesheet" href="../style.css" />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🕸️</text></svg>"
+    />
+    <script
+      type="module"
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
+    ></script>
+  </head>
+  <body>
+    <div class="container full-height">
+      <header class="header compact">
+        <h1>
+          <a
+            href="../index.html"
+            class="brand-link"
+            aria-label="Voltar para Nexusficador"
+            style="color: inherit; text-decoration: none"
+          >
+            <i
+              class="fa-solid fa-robot"
+              style="font-size: 1.5rem; vertical-align: middle"
+            ></i>
+            Nexusficador
+          </a>
+          <span class="divider">/</span>
+          <span class="current-app">
+            <i
+              class="fa-solid fa-project-diagram"
+              style="vertical-align: middle"
+            ></i>
+            Haplotnet-inator<sup>™</sup>
+          </span>
+        </h1>
+      </header>
+
+      <main class="main-content network-layout">
+        <!-- Sidebar Controls -->
+        <aside class="sidebar">
+          <section class="panel">
+            <h3><ion-icon name="folder-open-outline"></ion-icon> Arquivo</h3>
+            <div class="file-upload-compact">
+              <input type="file" id="nexusInput" accept=".nex,.nexus" hidden />
+              <button type="button" class="btn btn-secondary btn-sm" id="selectFileBtn">
+                Carregar NEXUS
+              </button>
+              <span id="fileName" class="file-name-display">Nenhum arquivo</span>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h3><ion-icon name="settings-outline"></ion-icon> Algoritmo</h3>
+            <div class="control-group">
+              <label for="algorithmSelect">Método</label>
+              <select id="algorithmSelect" class="form-select">
+                <option value="mj">Median-Joining (MJ)</option>
+                <option value="msn">Minimum Spanning (MSN)</option>
+              </select>
+            </div>
+            <div class="control-group" id="epsilonControl">
+              <label for="epsilonInput">Epsilon (ε)</label>
+              <input type="number" id="epsilonInput" value="0" min="0" class="form-input" />
+              <small>Parâmetro de tolerância para MJ</small>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h3><ion-icon name="eye-outline"></ion-icon> Visualização</h3>
+            <div class="control-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showLabels" checked />
+                <span class="checkbox-content">Mostrar Rótulos</span>
+              </label>
+            </div>
+            <div class="control-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showMutations" checked />
+                <span class="checkbox-content">Mostrar Mutações</span>
+              </label>
+            </div>
+            <div class="control-group">
+              <button type="button" class="btn btn-primary btn-sm" id="redrawBtn">
+                <ion-icon name="refresh-outline"></ion-icon> Redesenhar
+              </button>
+            </div>
+          </section>
+          
+          <section class="panel">
+             <h3><ion-icon name="list-outline"></ion-icon> Legenda</h3>
+             <div id="legendContainer" class="legend-container">
+               <!-- Legend items will be added here -->
+             </div>
+          </section>
+        </aside>
+
+        <!-- Network Visualization Area -->
+        <div class="visualization-area" id="vizContainer">
+          <div id="placeholderState" class="placeholder-state">
+            <ion-icon name="git-network-outline" class="large-icon"></ion-icon>
+            <h2>Nenhuma rede gerada</h2>
+            <p>Carregue um arquivo NEXUS ou gere um através do Nexusficador.</p>
+          </div>
+          <div id="networkCanvas" class="network-canvas"></div>
+          
+          <!-- Zoom Controls -->
+          <div class="zoom-controls">
+            <button id="zoomInBtn" title="Zoom In"><ion-icon name="add-outline"></ion-icon></button>
+            <button id="zoomOutBtn" title="Zoom Out"><ion-icon name="remove-outline"></ion-icon></button>
+            <button id="fitBtn" title="Ajustar à Tela"><ion-icon name="scan-outline"></ion-icon></button>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="spinner-overlay" style="display: none">
+      <div class="spinner"></div>
+      <p id="loadingMessage">Processando...</p>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

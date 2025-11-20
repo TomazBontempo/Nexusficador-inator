@@ -1,0 +1,377 @@
+APPLICATION
+POPART : full-feature software for haplotype network
+construction
+Jessica W. Leigh* and David Bryant
+Department of Mathematics and Statistics, University of Otago, P.O. Box 56, Dunedin 9054, New Zealand
+Summary
+1.Haplotype networks are an intuitive method for visualis ing relationships between individual genotypes at the
+population level.
+2.Here, we present POPART , an integrated software package that prov ides a comprehensive implementation of
+haplotype network methods, phylogeographic visualisat i o nt o o l sa n ds t a n d a r ds t a t i stical tests, together with
+publication-ready ﬁgure production.
+3.POPART also provides a platform for the implementation and distribution of new network-based methods –we
+describe one such new method, integer neighbour-joining .
+4.The software is open source and freely available for all major operating systems.
+Key-words: AMOVA, haplotype networks, phylogeography, polynesian expansion, population
+genetics, TCS
+Introduction
+Haplotype networks are used in the analysis of population
+genetic data to visualise genealogical relationships at the intra-
+speciﬁc level, as well as to make inference about biogeography
+and history of populations. Several methods for inferring hap-
+lotype networks have been described in the literature (Bandelt,
+Forster & R €ohl 1999; Clement et al. 2002; Cassens, Mardulyn
+& Milinkovitch 2005; Manolopoulou et al. 2011). Various
+of these have been implemented in software packages such
+as TCS (Clement, Posada & Crandall 2000), NETWORK
+(http://www.ﬂuxus-engineering.com), SPLITSTREE (Huson &
+Bryant 2006) and PEGAS (Paradis 2010), and these methods
+have been used extensively in the literature ( TCS,C l e m e n t ,
+Posada & Crandall 2000; Clement et al. 2002; 4937 citations;
+median-joining, Bandelt, Forster & R €ohl 1999; 3735 citations,
+according to Google Scholar, as of 15 April 2014). However,
+there has been no single software package which implements
+all of the standard methods. Moreover, most of these meth-
+ods are only available in software packages that are no longer
+maintained ( TCS) or are available for either Microsoft Win-
+dows (e.g. ARLEQUIN , Excoﬃer, Laval & Schneider 2005; NET-
+WORK ;DNASP , Librado & Rozas 2009) or Mac OS X (e.g.
+GENODIVE , http://www.bentleydrummer.nl/software/software/
+GenoDive.html), but not both. Finally, users are required to
+produce networks with one software package and then use
+another (e.g. HAPSTAR , Teacher & Griﬃths 2011) to produce
+publication-quality ﬁgures f rom these networks. Worse still,
+many users produce ﬁgures ‘manually’ using graphics editingsoftware, a process that is both time-consuming and error-
+prone.
+Here, we present POPART (Population Analysis with Reticu-
+late Trees), a software package for population genetics analysis
+using haplotype networks that is designed to be user-friendly
+and feature-rich and runs on Microsoft Windows, LINUX and
+Mac OS X. POPART includes implementations of minimum span-
+ning, median-joining and TCSnetwork methods and provides a
+powerful and user-friendly fra mework for the implementation
+and distribution of new methods. In addition to haplotype net-
+work construction, POPART includes AMOVA (Excoﬃer, Smouse
+& Quattro 1992), Tajima’s D statistic (Tajima 1989), several
+other basic statistics that are useful for population genetics
+analyses, as well as tools for visualising the geographical distri-
+bution of genetic data using a map-based interface. We include
+a brief description of the haplotype inference methods devel-
+oped by other authors that have been implemented in POPART ,
+and introduce a new method, integer neighbour-joining
+(IntNJ). We demonstrate the use of these methods and some of
+the other features available in POPART using human mitochon-
+drial sequence data recently published by Knapp et al. (2012).
+Haplotype network inference and visualisation
+The primary function of POPART is the inference and visualisa-
+tion of genetic relationships among intraspeciﬁc sequences. PO-
+PART takes sequence data as input and features several methods
+for inferring relationships desi gned for the analysis of popula-
+tion genetic data. POPART allows users to use three popular hap-
+lotype network inference methods: TCS(Clement et al. 2002),
+minimum spanning networks and median-joining networks
+(MSN and MJN, respectively; (Bandelt, Forster & R €ohl 1999).*Correspondence author. E-mail: jleigh@maths.otago.ac.nz
+©2015 The Authors. Methods in Ecology and Evolution ©2015 British Ecological SocietyMethods in Ecology and Evolution 2015, 6,1110–1116 doi: 10.1111/2041-210X.12410
+
+
+We have implemented several new methods in POPART and
+describe one of these, integer neighbour-joining (IntNJ), below.
+Once a haplotype network has been inferred, it is drawn
+inPOPART ’s network viewer panel using the spring embed-
+ded layout described by Tunkelang (1999). The networkviewer panel allows users to modify various aspects of thenetwork’s appearance, including colours, fonts and posi-tions of nodes and labels. The number of mutations repre-sented by the network’s edges can be displayed using either
+‘one-step edges’ (edges of length 1 joined through interme-
+diate nodes of degree 2, which represent unsampledsequences), as hatch marks along edges, or as labels givingthe number of mutations. Users can also display auxiliaryinformation (traits) associat ed with haplotype sequences,
+such as geographical locations where samples were col-lected or phenotypic informat ion. This information is dis-
+played as pie charts at the nodes of the network, showing
+relative frequencies of the diﬀe rent traits associated with a
+particular sequence. Images of networks shown in the net-work panel can be exported as full-colour, high-resolutionimages in PNG, SVG and PDF formats.
+EXAMPLE: HUMAN MIGRATION ACROSS OCEANIA
+For the purpose of demonstrating the use of POPART ,w ep r e s -
+ent networks inferred from the human mitochondrial sequence
+data of Knapp et al. (2012), originally used to explore human
+migration across Remote Oceania. Despite the relative recencyof this event, both the origin of Remote Oceania populationsand the order of colonisation of islands in the region remaincontroversial (Pierson et al. 2006; Wollstein et al. 2010; Soares
+et al. 2011; Delﬁn et al. 2012). Recent attempts to investigate
+migration across Oceania have begun to look at ancient DNA
+sequences from animals, including chickens Thomson et al.
+(2014b) and rats Thomson et al. (2014a), whose dispersal was
+mediated by humans.HAPLOTYPE NETWORK CONSTRUCTION
+POPART includes three popular haplotype network inference
+methods developed by other authors: the MSN and MJNmethods of (Bandelt, Forster & R €ohl 1999), and the
+TCS
+method of (Clement et al. 2002). Networks constructed using
+the MSN method contain all edges that appear in a minimum
+spanning tree of the sequences, that is all networks containing
+only nodes that represent input sequences connected by edges,with no cycles with the shortest possible total length (whereedge lengths are equal to pairwise distances betweensequences). Figure 1 gives the MSN for the mitochondrialdata.
+A shortcoming of the MSN method is that it does not
+attempt to infer any additional nodes or ancestral sequences,
+even when there might be considerable evidence for the exis-
+tence of such nodes. Note, for example, the complex networkstructure on the left-hand side of the ﬁgure. With the additionof a single (inferred) ancestra l node, this tangle becomes a
+straightforward radiation, as in the MJN (Fig. 2). Thismethod, described in detail in Bandelt, Forster & R €ohl (1999)
+and Huson, Rupp & Scornavacca (2011), includes nodes torepresent inferred (unsampled) sequences by iteratively adding
+‘median’ sequence vectors when these nodes shorten the total
+length of the network.
+The
+TCSnetwork (Fig. 3) is constructed using an agglom-
+erative approach where cluste rs are progressively combined
+with one or more connecting edges; for details see Clementet al. (2002). For these data, the
+TCSand MJN networks
+are similar, both suggesting a radiation of sequences fromRemote Oceania and Madagascar from an ancestral
+sequence.
+One important caveat with all existing haplotype network
+methods is that they do not exp licitly involve evolutionary
+models when constructing the net work representations. In all
+but the simplest of cases, it would be unwise to interpret the
+Fig. 1. Minimum spanning network inferred
+from human mitochondrial sequences from
+Oceania. This network was inferred using the
+algorithm described by Bandelt, Forster &R€ohl (1999). Sequence nodes corresponding
+to samples collected from Near Oceania are in
+green tones and sequences from Remote Ocea-
+nia are in blue tones.
+©2015 The Authors. Methods in Ecology and Evolution ©2015 British Ecological Society, Methods in Ecology and Evolution ,6, 1110–1116POPART : haplotype network software 1111
+
+networks as reconstructions of e volutionary history, at least
+not without corroborating evidence.
+The haplotype networks do provide, however, a concise and
+accessible representation of the data themselves, one aspectwhich is often lost in methods heavily dependent on model-based inference. Once the mutations are labelled, the entiredata set can be reconstructed from the network. In this capac-ity, haplotype networks provide useful summary statistics forfurther tests.
+A NEW METHOD: INTEGER NEIGHBOUR-JOINING
+Integer neighbour-joining (IntNJ) is a technique for construct-
+ing haplotype networks with a con trolled level of reticulation.Like the reticulogram method of T-REX(Makarenkov 2001),
+we start with an inferred tree and then proceed to add edges.
+The methods diﬀer in the way that IntNJ constrains networksto have integer edge lengths and in the criteria used to addadditional edges. The integer restriction is particularly
+important for the kinds of low-divergence data sets which areoften analysed using haplotype networks.
+The IntNJ method begins by computing a matrix of
+Hamming distances between unique haplotype sequences (Fig.
+4a). These sequence distances are used to infer a tree (Fig. 4b)
+using the neighbour-joining method (Saitou & Nei 1987). Thetree forms the backbone of the network. We use integer linearprogramming to minimise the total length of the tree (Fig. 4c)subject to the following two c onditions: guarantee thatFig. 2. Median-joining network inferred from
+human mitochondrial sequences from Ocea-
+nia. This network was inferred using the algo-
+rithm described by Bandelt, Forster & R €ohl
+(1999). Sequence nodes corresponding to sam-ples collected from Near Oceania are in green
+tones and sequences from Remote Oceania
+are in blue tones.
+Fig. 3. TCSnetwork inferred from human
+mitochondrial sequences from Oceania.
+This network was inferred using the algo-
+rithm described by Clement et al. (2002).
+Sequence nodes corresponding to samplescollected from Near Oceania are in green
+tones and sequences from Remote Oceania
+are in blue tones.
+©2015 The Authors. Methods in Ecology and Evolution ©2015 British Ecological Society, Methods in Ecology and Evolution ,6, 1110–11161112 J. W. Leigh & D. Bryant
+
+(a) (b) (c) (e)
+(d)
+Fig. 4. Overview of the integer neighbour-joining network inference m ethod. The IntNJ method begins by computing a distance matrix
+(a) from which a neighbour-joining tree is inferred. (b) Integer edg e lengths are chosen using integer linear programming. (c) Nodes and
+edges (except those of length zero) from the tree are added to the network. (d) For all pairs of sampled sequences, the number of excessmutations Ximplied by the network is computed. (e) These values are used to determine whether to add additional edges to the net-
+work.
+(a) (b)
+(c) (d)
+(e) (f)
+Fig. 5. Integer neighbour-joining networks inferred from human mitochondrial sequences from Oceania. IntNJ networks were inferred with a range
+ofav a l u e sb e t w e e n0a n d1 :( a ) a=0; (b) a=0/C11; (c) a=0/C125; (d) a=0/C15; (e) a=0/C175; (f) a=1 . Sequence nodes corresponding to samples
+collected from Near Oceania are in green tones and sequences from Remote Oceania are in blue tones.
+©2015 The Authors. Methods in Ecology and Evolution ©2015 British Ecological Society, Methods in Ecology and Evolution ,6, 1110–1116POPART : haplotype network software 1113
+
+(N1) The distance in the network (tree) dT
+ijbetween nodes
+representing sampled sequences iandjis at least equal to the
+distance dS
+ijbetween the two sequences: dT
+ij/C21dS
+ij.
+(N2) Edge lengths are non-negative integers.Theexcess for a pair i,jof taxa is the diﬀerence between the
+distance in the network and the distance between thesequences, which we denote
+X
+i;j¼dT
+i;j/C0dS
+i;j:
+By property (N1), the excess is always non-negative. Our
+goal is to add additional edg es to the network so that more
+pairs get excess zero. However, we do this in such a way that(N1) and (N2) hold, so that the number of additional edges is
+minimised.
+Following Chung et al. (2001) we adopt a heuristic, itera-
+tive strategy. We consider pairs i,jof taxa in order, starting
+with the pair which has the largest excess. For this pair, weconsider all ways of inserting a new path into the networkin a way that reduces their excess to zero, does not violate(N1) and (N2) and uses as few additional edges as possible.After adding this path, we update the distance calculations
+in the network and continue until all pairs have excess zero
+(Fig. 4c).
+In practice, we found that removing the excess for all pairs
+in this way sometimes led to networks which were unnecessar-ily complicated. For this reason , we implemented a parameterwhich determines the relative importance of excess versus net-
+work complexity. Let abe a parameter between 0 and 1. Let
+X¼X
+ijðdT
+ij/C0dS
+ijÞ
+denote the total summed excess over all pairs in the network,
+and let Wdenote the total sum of edge weights in the network.
+When deciding whether or not to reduce the excess between apair of nodes by adding additional edges, we determine theeﬀect of the modiﬁcation on the weighted sum
+aXþð1/C0aÞW:
+If this sum decreases, we carry out the modiﬁcation. Other-
+wise, we continue to the next pair.
+The value for aacts like a regularisation parameter. If
+a=0, then no additions will be made to the network and we
+will recover the original, integer-weighted tree. If a=1, then
+we will recover a network whi ch exactly represents the
+sequence distances but may be quite complicated as a conse-
+quence. As with all forms of regularisation, there is no com-pletely objective procedure for choosing a, especially since we
+are not assuming any model of e rror in the sequence distances.
+Instead, the parameter can be controlled directly by the user,depending on context. Figure 5 shows IntNJ networks for themitochondrial data of Knapp et al. (2012) with a range of a
+values.
+B4a1a
+B4a1a1
+B4a1a1b
+B4a1a2
+B4a1a3
+B4a1a4
+B4a1a1a
+B4a1a1a1
+B4a1a1a3
+Fig. 6. Human mitochondrial sequence samp l i n gl o c a t i o n sp l a c e do nam a pu s i n g POPART . Sampling locations for Oceania sequence data were used
+to place the sequences on a map. Colours indicate diﬀerent mitochondrial haplogroups, with sequences featu ring the Polynesian motif (Knapp et al.
+2012) shown in green tones.
+©2015 The Authors. Methods in Ecology and Evolution ©2015 British Ecological Society, Methods in Ecology and Evolution ,6, 1110–11161114 J. W. Leigh & D. Bryant
+
+Visualisation of the geog raphical distributional
+recombination of sequence data
+POPART users can toggle between the network visualisation
+panel and an interactive map panel that displays geograph-ical positions of sequences if this information is available.
+Users can zoom in and out of the map and can pan to
+diﬀerent map locations. The map interface was imple-mented using the Marble library (http://marble.kde.org),
+and its appearance can be customised using several pre-deﬁned themes.
+POPART can use several diﬀerent types of geographical
+data in order to place sequences on the map panel. First,geographical locations at which individual sequences were
+collected can be used to cluster sequences using the k-
+means algorithm with the great circle distances betweenlocations. Secondly, users can a ssociate traits (as described
+above) with sets of sequences and can include geographicallocations for each trait (i.e. rather than including locationsfor each sequence). Finally, if no geographical locationsare explicitly given, but trait names describe geographicallocations, users can search for these locations in the map
+interface. If the user is unhap py with the locations found
+for trait groups, these can be manually corrected in them a pi n t e r f a c e .A sw i t ht h en e t w o r kp a n e l ,u s e r sc a ne x p o r tfull-colour images (e.g. Fig. 6) from the map panel inPNG, SVG and PDF formats.
+Population genetics statistics
+Many statistical analysis tools are now available for popula-tion genetics analyses. Currently,
+POPART provides a small num-
+ber of the most commonly used statistics, including Tajima’s Dstatistic (Tajima 1989),
+AMOVA (Excoﬃer, Smouse & Quattro
+1992), nucleotide diversity, segregating sites and parsimony-informative sites. We will continue to add further statisticalanalysis tools in future releases.
+File formats
+POPART opens sequence alignments in NEXUS (Maddison,
+Swoﬀord & Maddison 1997) and PHYLIP formats (including
+relaxed as well as classic sequential and interleaved vari-ants). Using
+NEXUS format allows the user to include addi-
+tional information. Sequence sampling locations can beincluded as a GeoTag block (Appendix S1). Geographical,
+phenotypic or other traits associated with sequences can
+also be included in
+NEXUS ﬁles in a Traits block (Appen-
+dix S1). POPART also uses NEXUS format to save and load
+networks, including layout, colours and fonts changed byusers.
+If users choose to use
+PHYLIP format sequence alignments,
+they can still associate geographical locations or traits informa-tion with their sequences by in teractively importing data in
+various tabular formats (tab- or space-delimited text ﬁles or
+CSVﬁles). However, data in these ﬁles are somewhat less ﬂexible
+than in the equivalent NEXUS blocks.Future directions and distribution
+POPART was envisioned as a platfo rm for implementation of
+new population genetics analy sis methods. We will continue to
+use it to implement new, better methods for inferring haplo-t y p en e t w o r k s .W ea l s oi n t e n dt oc o n t i n u et oa d df e a t u r e st h a t
+make analysis of population genetic data easier. Currently, we
+are working on implementing the s
+AMOVA algorithm to cluster
+sequences geographically. We a lso have plans to visualise
+temporal distribution of sequ ences using the method of Prost
+& Anderson (2011). We maintain a mailing list and activelyimplement features requested by users.
+POPART is freely available as both a stable release and beta
+release from http://popart.otago.ac.nz. Source code is
+additionally available on github from https://github.com/
+jessicawleigh/popart. Man uals in epub and PDF formats
+are available from both http://popart.otago.ac.nz andhttps://github.com/jessicawlei gh/popart. We intend to release
+a new stable version roughly annually, and to implementand test new features more frequently in regular betareleases. All releases will be distributed as MicrosoftWindows and Mac OS X executables as well as source ﬁles.
+Acknowledgements
+We wish to thank Lisa Matisoo-Smith and Michael Knapp for allowing us to
+demonstrate POPART using their human mitochondrial DNA sequence alignment.
+The development of POPART was funded by the Allan Wilson Centre Imaging Evo-
+lution Initiative.
+Data accessibility
+Software and manuals deposit ed in the Dryad repository: http://datadryad.org/
+resource/doi:10.5061/dryad.4n4j1 (Leigh and Bryant 2015)
+References
+B a n d e l t ,H . ,F o r s t e r ,P .&R €ohl, A. (1999) Median-joining networks for
+inferring intraspeciﬁc phylogenies. Molecular Biology and Evolution ,16,
+37–48.
+Cassens, I., Mardulyn, P. & Milinkovit ch, M.C. (2005) Evaluating intraspeciﬁc
+“network” construction methods using simulated sequence data: do existingalgorithms outperform the global maximum parsimony approach? Systematic
+Biology, 54,363–372.
+Chung, F., Garrett, M., Graham, R. & Shall cross, D. (2001) Dist ance realization
+problems with applications to internet tomography. Journal of Computer and
+System Sciences ,63,4 3 2 –448.
+Clement, M., Posada, D. & Crandall, K.A. (2000) TCS: a computer program to
+estimate gene genealogies. Molecular Ecology ,9, 1657 –1659.
+Clement, M., Snell, Q., Walke, P., Posada, D. & Crandall, K. (2002) TCS: esti-
+mating gene genealogies. Proceeding 16t h International Parallel Distributed
+Processing Symposium, p. 184.
+Delﬁn, F., Myles, S., Choi, Y., Hughes, D., Illek, R., van Oven, M., Pakendorf,
+B., Kayser, M. & Stoneking, M. (2012) Bridging near and remote Oceania:
+mtDNA and NRY variation in the Solomon Islands. Molecular Biology and
+Evolution ,29, 545 –564.
+Excoﬃer, L., Smouse, P.E. & Quattro , J.M. (1992) Analysis of molecular
+variance inferred from metric distances among DNA haplotypes : applica-tion to human mitochondrial DNA restriction data. Genetics ,131,4 7 9 –
+491.
+Excoﬃer, L., Laval, G. & Schneider, S. (2005) Arlequin (version 3.0): an inte-
+grated software package for population genetics data analysis. Evolutionary
+Bioinformatics Online ,1,4 7–50.
+Huson, D.H. & Bryant, D. (2006) Applicat ion of phylogenetic networks in evolu-
+tionary studies. Molecular Biology and Evolution ,23,2 5 4 –267.
+©2015 The Authors. Methods in Ecology and Evolution ©2015 British Ecological Society, Methods in Ecology and Evolution ,6, 1110–1116POPART : haplotype network software 1115
+
+Huson, D.H., Rupp, R. & Scornavacca, C. (2011) Phylogenetic Networks: Con-
+cepts, Algorithms and Applications . Cambridge University Press, New York,
+NY, USA.
+Knapp, M., Horsburgh, K.A., Prost, S., Stanton, J.A., Buckley, H.R., Walter,
+R.K. & Matisoo-Smith, E.A. (2012) Complete mitochondrial DNA genomesequences from the ﬁrst New Zealanders. Proceedings of the National Academy
+of Sciences of the United States of America ,109, 18350 –18354.
+Leigh, J.W. & Bryant, D. (2015) Data from: PopART: Full-feature software
+for haplotype network construction. Methods in Ecology and Evolution ,
+doi: 10.5061/dryad.4n4j1.
+Librado, P. & Rozas, J. (2009) DnaSP v5: a s oftware for comprehensive analysis
+of DNA polymorphism data. Bioinformatics ,25,1 4 5 1 –1452.
+Maddison, D., Swoﬀord, D. & Maddison, W. (1997) NEXUS: An extensible ﬁle
+format for systematic information. Systematic Biology ,46, 590 –621.
+Makarenkov, V. (2001) T-REX: reconstructi ng and visualizing phylogenetic trees
+a n dr e t i c u l a t i o nn e t w o r k s . Bioinformatics ,17,6 6 4 –668.
+Manolopoulou, I., Legarreta, L., Emerson, B.C., Brooks, S. & Tavar /C19e, S. (2011)
+A Bayesian approach to phylogeographic clustering. Interface Focus ,1,9 0 9 –
+921.
+Paradis, E. (2010) pegas: an R package for population genetics with an inte-
+grated-modular approach. Bioinformatics ,26, 419 –420.
+Pierson, M.J., Martinez-Arias, R., Holland, B.R., Gemmell, N.J., Hurles, M.E.
+& Penny, D. (2006) Deciphering past human population movements in Ocea-nia: provably optimal trees of 127 mtDNA genomes. Molecular Biology and
+Evolution ,23, 1966 –1975.
+Prost, S. & Anderson, C.N.K. (2011) TempNet: a method to display statistical
+parsimony networks for heter ochronous DNA sequence data. Methods in
+Ecology and Evolution ,2, 663 –667.
+Saitou, N. & Nei, M. (1987) The neighbor-joining method: a new method for
+reconstructing phylogenetic trees. Molecular Biology and Evolution ,4,4 0 6 –
+425.
+Soares, P., Rito, T., Trejaut, J., Mormina, M., Hill, C., Tinkler-Hundal, E. et al.
+(2011) Ancient voyaging and Polynesian origins. American Journal of Human
+Genetics ,88,2 3 9 –247.Tajima, F. (1989) Statistical method for testing the neutral mutation hypothesis
+by DNA polymorphism. Genetics ,123,5 8 5 –595.
+Teacher, A.G.F. & Griﬃths, D.J. (2011) HapStar: automated haplotype network
+layout and visualization. Molecular Ecology Resources ,11, 151 –153.
+T h o m s o n ,V . ,A p l i n ,K . P . ,C o o p e r ,A . ,H i s h e h ,S . ,S u z u k i ,H . ,M a r y a n t o ,I . ,
+Yap, G. & Donnellan, S.C. (2014a) Molecular genetic evidence for the place of
+origin of the paciﬁc rat, rattus exulans. PLoS ONE ,9, e91356.
+Thomson, V.A., Lebrasseur, O., Austin, J.J., Hunt, T.L., Burney, D.A., Denham,
+T.et al. (2014b) Using ancient DNA to study the origins and dispersal of
+ancestral Polynesian chi ckens across the Paciﬁc. Proceedings of the National
+Academy of Sciences of the United States of America ,111, 4826 –4831.
+Tunkelang, D. (1999) A Numerical Optimization Approach to General Graph
+Drawing .P h Dt h e s i s .C a r n e g i eM e l l o nU n i v e r s i t y .
+Wollstein, A., Lao, O., Becker , C., Brauer, S., Trent, R.J., N €urnberg, P., Stone-
+king, M. & Kayser, M. (2010) Demographic history of Oceania inferred fromgenome-wide data. Current Biology ,20, 1983 –1992.
+Received 10 March 2015; accepted 6 May 2015
+Handling Editor: Shinichi Nakagawa
+Supporting Information
+Additional Supporting Information may be found in the online version
+of this article.
+Appendix S1. POPART NEXUS Blocks.
+Data S1. POPART sources.
+Data S2. POPART manual (PDF).
+©2015 The Authors. Methods in Ecology and Evolution ©2015 British Ecological Society, Methods in Ecology and Evolution ,6, 1110–11161116 J. W. Leigh & D. Bryant
